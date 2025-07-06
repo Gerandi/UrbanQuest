@@ -1693,7 +1693,6 @@ class _QuestGameplayViewState extends State<QuestGameplayView>
             questId: widget.quest.id,
             stopId: stop.id,
             imagePath: image.path,
-            fileName: 'quest_${widget.quest.id}_stop_${stop.id}_${DateTime.now().millisecondsSinceEpoch}.jpg',
           );
           
           if (mounted) Navigator.of(context).pop(); // Close loading dialog
