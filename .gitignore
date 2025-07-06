@@ -1,0 +1,38 @@
+# Project files
+.env
+.env.local
+.env.production
+
+# Flutter specific
+urbanquest_app/build/
+urbanquest_app/.dart_tool/
+urbanquest_app/.packages
+urbanquest_app/.pub-cache/
+urbanquest_app/.pub/
+urbanquest_app/.metadata
+urbanquest_app/pubspec.lock
+
+# Android specific
+urbanquest_app/android/app/upload-keystore.jks
+urbanquest_app/android/key.properties
+
+# iOS specific
+urbanquest_app/ios/Pods/
+urbanquest_app/ios/.symlinks/
+urbanquest_app/ios/Flutter/Flutter.framework
+urbanquest_app/ios/Flutter/Flutter.podspec
+urbanquest_app/ios/Runner.xcworkspace
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
