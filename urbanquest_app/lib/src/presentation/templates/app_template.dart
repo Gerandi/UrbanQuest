@@ -275,9 +275,7 @@ class _AppTemplateState extends State<AppTemplate> {
       case AppView.citySelection:
         return CitySelectionView(
           onNavigate: _navigateToView,
-          onCitySelected: (cityId) {
-            // Get city name from ID (in real app, this would come from a service)
-            final cityName = _getCityNameFromId(cityId);
+          onCitySelected: (cityId, cityName) {
             _navigateToView(
               AppView.questList,
               NavigationData(cityId: cityId, cityName: cityName),
@@ -344,17 +342,6 @@ class _AppTemplateState extends State<AppTemplate> {
     }
   }
 
-  String _getCityNameFromId(String cityId) {
-    final cityNames = {
-      'tirana': 'Tirana',
-      'berat': 'Berat',
-      'shkoder': 'Shkodër',
-      'durres': 'Durrës',
-      'gjirokaster': 'Gjirokastër',
-      'sarande': 'Sarandë',
-    };
-    return cityNames[cityId] ?? 'Unknown City';
-  }
 
   NavigationTab _mapBottomNavToNavTab(BottomNavTab bottomTab) {
     switch (bottomTab) {

@@ -68,7 +68,7 @@ class Quest extends Equatable {
         estimatedDuration: json['estimated_duration_minutes']?.toString() ?? '60',
         difficulty: json['difficulty']?.toString() ?? 'Easy',
         isActive: json['is_active'] == true,
-        numberOfStops: int.tryParse(json['number_of_stops']?.toString() ?? '0') ?? 0,
+        numberOfStops: int.tryParse(json['quest_stops_count']?.toString() ?? '0') ?? 0,
         rating: double.tryParse(json['rating']?.toString() ?? '0') ?? 0.0,
         completions: int.tryParse(json['total_completions']?.toString() ?? '0') ?? 0,
         category: categoryName.isNotEmpty ? categoryName : (json['category']?.toString() ?? 'General'),

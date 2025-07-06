@@ -43,6 +43,7 @@ class UserProfileRepository {
         totalPlaytimeMinutes: statsData['total_playtime_minutes'] ?? 0,
         longestQuestStreak: statsData['longest_quest_streak'] ?? 0,
         currentQuestStreak: statsData['current_quest_streak'] ?? 0,
+        currentLevel: statsData['current_level'] ?? 1,
         levelTitle: statsData['level_title'] ?? 'Explorer',
       );
 
@@ -52,7 +53,6 @@ class UserProfileRepository {
         displayName: userData['display_name'] ?? 'Anonymous',
         avatar: userData['avatar_url'] ?? '',
         totalPoints: userData['total_points'] ?? 0,
-        level: _calculateLevel(userData['total_points'] ?? 0),
         stats: stats,
         createdAt: DateTime.parse(userData['created_at']),
         permissions: const ['user'],
@@ -120,6 +120,7 @@ class UserProfileRepository {
         totalPlaytimeMinutes: statsData['total_playtime_minutes'] ?? 0,
         longestQuestStreak: statsData['longest_quest_streak'] ?? 0,
         currentQuestStreak: statsData['current_quest_streak'] ?? 0,
+        currentLevel: statsData['current_level'] ?? 1,
         levelTitle: statsData['level_title'] ?? 'Explorer',
       );
 
@@ -129,7 +130,6 @@ class UserProfileRepository {
         displayName: userData['display_name'] ?? 'Anonymous',
         avatar: userData['avatar_url'] ?? '',
         totalPoints: userData['total_points'] ?? 0,
-        level: _calculateLevel(userData['total_points'] ?? 0),
         stats: stats,
         createdAt: DateTime.parse(userData['created_at']),
         permissions: const ['user'],
@@ -191,6 +191,7 @@ class UserProfileRepository {
         totalPlaytimeMinutes: 0,
         longestQuestStreak: 0,
         currentQuestStreak: 0,
+        currentLevel: 1,
         levelTitle: 'Explorer',
       );
       }
@@ -213,6 +214,7 @@ class UserProfileRepository {
           totalPlaytimeMinutes: 0,
           longestQuestStreak: 0,
           currentQuestStreak: 0,
+          currentLevel: 1,
           levelTitle: 'Explorer',
         );
       }
@@ -228,6 +230,7 @@ class UserProfileRepository {
         totalPlaytimeMinutes: statsData['total_playtime_minutes'] ?? 0,
         longestQuestStreak: statsData['longest_quest_streak'] ?? 0,
         currentQuestStreak: statsData['current_quest_streak'] ?? 0,
+        currentLevel: statsData['current_level'] ?? 1,
         levelTitle: statsData['level_title'] ?? 'Explorer',
       );
     } catch (e) {
@@ -242,6 +245,7 @@ class UserProfileRepository {
         totalPlaytimeMinutes: 0,
         longestQuestStreak: 0,
         currentQuestStreak: 0,
+        currentLevel: 1,
         levelTitle: 'Explorer',
       );
     }

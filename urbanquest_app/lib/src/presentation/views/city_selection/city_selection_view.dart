@@ -40,7 +40,7 @@ class CityData {
 
 class CitySelectionView extends StatefulWidget {
   final Function(AppView, [NavigationData?])? onNavigate;
-  final Function(String)? onCitySelected;
+  final Function(String, String)? onCitySelected;
 
   const CitySelectionView({super.key, this.onNavigate, this.onCitySelected});
 
@@ -192,7 +192,7 @@ class _CitySelectionViewState extends State<CitySelectionView> {
 
   Widget _buildCityCard(CityData city, int index) {
     return GestureDetector(
-      onTap: () => widget.onCitySelected?.call(city.id),
+      onTap: () => widget.onCitySelected?.call(city.id, city.name),
       child: Container(
         margin: const EdgeInsets.only(bottom: 24),
         decoration: BoxDecoration(
