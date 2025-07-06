@@ -30,7 +30,8 @@
       "Bash(gh auth:*)",
       "Bash(git remote:*)",
       "mcp__supabase__get_project",
-      "Bash(tar:*)"
+      "Bash(tar:*)",
+      "Bash(flutter analyze:*)"
     ]
   },
   "mcpServers": {

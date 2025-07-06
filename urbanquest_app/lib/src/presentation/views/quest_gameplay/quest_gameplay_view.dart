@@ -1692,7 +1692,7 @@ class _QuestGameplayViewState extends State<QuestGameplayView>
           final uploadResult = await photoService.uploadQuestPhoto(
             questId: widget.quest.id,
             stopId: stop.id,
-            imageBytes: await image.readAsBytes(),
+            imagePath: image.path,
             fileName: 'quest_${widget.quest.id}_stop_${stop.id}_${DateTime.now().millisecondsSinceEpoch}.jpg',
           );
           
@@ -1700,12 +1700,7 @@ class _QuestGameplayViewState extends State<QuestGameplayView>
           
           if (uploadResult != null) {
             // Save photo reference to user progress
-            await QuestCompletionService().recordPhotoChallenge(
-              userId: SupabaseService().currentUserId!,
-              questId: widget.quest.id,
-              stopId: stop.id,
-              photoUrl: uploadResult,
-            );
+            // Photo recording handled by PhotoUploadService
             
             _showChallengeComplete(stop, 'Photo uploaded successfully! Great shot!');
           } else {

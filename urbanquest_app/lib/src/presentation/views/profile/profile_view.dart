@@ -144,7 +144,7 @@ class _ProfileViewState extends State<ProfileView> {
       
       if (success) {
         // Sign out user
-        context.read<AuthBloc>().add(SignOutRequested());
+        context.read<AuthBloc>().add(LogoutEvent());
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
