@@ -67,6 +67,7 @@ class UserRepository {
         totalPlaytimeMinutes: statsData['total_playtime_minutes'] ?? 0,
         longestQuestStreak: statsData['longest_quest_streak'] ?? 0,
         currentQuestStreak: statsData['current_quest_streak'] ?? 0,
+        currentLevel: statsData['current_level'] ?? 1,
         levelTitle: statsData['level_title'] ?? 'Explorer',
       );
 
@@ -81,7 +82,6 @@ class UserRepository {
         displayName: profileResponse.first['display_name'] ?? 'Anonymous Explorer',
         avatar: profileResponse.first['avatar_url'] ?? '',
         totalPoints: profileResponse.first['total_points'] ?? 0,
-        level: level['level_number'] ?? 1,
         stats: stats,
         createdAt: DateTime.parse(profileResponse.first['created_at']),
         permissions: const ['user'],
@@ -228,7 +228,7 @@ class UserRepository {
           quests!inner(
             title,
             difficulty,
-            estimated_duration,
+            estimated_duration_minutes,
             cities!inner(name)
           )
         ''',

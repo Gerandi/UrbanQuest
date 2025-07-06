@@ -72,9 +72,12 @@ class CustomButton extends StatelessWidget {
                     Icon(icon, size: _getIconSize()),
                     SizedBox(width: _getIconSpacing()),
                   ],
-                  Text(
-        text,
-                    style: _getTextStyle(theme),
+                  Flexible(
+                    child: Text(
+                      text,
+                      style: _getTextStyle(theme),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ),

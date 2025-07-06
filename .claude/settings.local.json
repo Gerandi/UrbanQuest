@@ -31,8 +31,6 @@
       "Bash(git remote:*)",
       "mcp__supabase__get_project",
       "Bash(tar:*)",
-      "Bash(git checkout:*)",
-      "Bash(cp:*)"
     ]
   },
   "mcpServers": {
