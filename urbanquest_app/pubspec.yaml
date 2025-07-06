@@ -57,6 +57,7 @@ dependencies:
   image_picker: ^1.0.4
   cached_network_image: ^3.3.0
   image: ^4.1.7
+  share_plus: ^7.2.1
   
   # Permissions
   permission_handler: ^11.0.1

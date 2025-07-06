@@ -12,7 +12,6 @@ class User extends Equatable {
   final DateTime createdAt;
   final List<String> permissions;
   final int totalPoints;
-  final int level;
   final UserStats? stats;
 
   const User({
@@ -23,9 +22,11 @@ class User extends Equatable {
     required this.createdAt,
     required this.permissions,
     this.totalPoints = 0,
-    this.level = 1,
     this.stats,
   });
+
+  // Get level from user_stats.current_level
+  int get level => stats?.currentLevel ?? 1;
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
   Map<String, dynamic> toJson() => _$UserToJson(this);
@@ -38,7 +39,6 @@ class User extends Equatable {
     DateTime? createdAt,
     List<String>? permissions,
     int? totalPoints,
-    int? level,
     UserStats? stats,
   }) {
     return User(
@@ -49,7 +49,6 @@ class User extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       permissions: permissions ?? this.permissions,
       totalPoints: totalPoints ?? this.totalPoints,
-      level: level ?? this.level,
       stats: stats ?? this.stats,
     );
   }
@@ -63,7 +62,6 @@ class User extends Equatable {
         createdAt,
         permissions,
         totalPoints,
-        level,
         stats,
       ];
 }
@@ -79,6 +77,7 @@ class UserStats extends Equatable {
   final int totalPlaytimeMinutes;
   final int longestQuestStreak;
   final int currentQuestStreak;
+  final int currentLevel;
   final String levelTitle;
 
   const UserStats({
@@ -91,6 +90,7 @@ class UserStats extends Equatable {
     required this.totalPlaytimeMinutes,
     required this.longestQuestStreak,
     required this.currentQuestStreak,
+    required this.currentLevel,
     required this.levelTitle,
   });
 
@@ -107,6 +107,7 @@ class UserStats extends Equatable {
     int? totalPlaytimeMinutes,
     int? longestQuestStreak,
     int? currentQuestStreak,
+    int? currentLevel,
     String? levelTitle,
   }) {
     return UserStats(
@@ -119,6 +120,7 @@ class UserStats extends Equatable {
       totalPlaytimeMinutes: totalPlaytimeMinutes ?? this.totalPlaytimeMinutes,
       longestQuestStreak: longestQuestStreak ?? this.longestQuestStreak,
       currentQuestStreak: currentQuestStreak ?? this.currentQuestStreak,
+      currentLevel: currentLevel ?? this.currentLevel,
       levelTitle: levelTitle ?? this.levelTitle,
     );
   }
@@ -134,6 +136,7 @@ class UserStats extends Equatable {
         totalPlaytimeMinutes,
         longestQuestStreak,
         currentQuestStreak,
+        currentLevel,
         levelTitle,
       ];
 }
