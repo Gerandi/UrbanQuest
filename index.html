@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UrbanQuest Admin Dashboard</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-button.active { @apply bg-blue-500 text-white; }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div id="app" class="min-h-screen">
+        <!-- Login Form -->
+        <div id="loginForm" class="flex items-center justify-center min-h-screen">
+            <div class="bg-white p-8 rounded-lg shadow-md w-96">
+                <h1 class="text-2xl font-bold mb-6 text-center">UrbanQuest Admin</h1>
+                <form id="loginFormElement">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="email">
+                            Email
+                        </label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" 
+                               id="email" type="email" placeholder="admin@urbanquest.com" required>
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
+                            Password
+                        </label>
+                        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" 
+                               id="password" type="password" placeholder="Password" required>
+                    </div>
+                    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full" 
+                            type="submit">
+                        Sign In
+                    </button>
+                </form>
+                <div id="loginError" class="mt-4 text-red-500 text-sm hidden"></div>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboard" class="hidden">
+            <!-- Header -->
+            <header class="bg-white shadow">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-center py-6">
+                        <h1 class="text-3xl font-bold text-gray-900">UrbanQuest Admin</h1>
+                        <div class="flex items-center space-x-4">
+                            <span id="userEmail" class="text-gray-700"></span>
+                            <button id="logoutBtn" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Navigation -->
+            <nav class="bg-gray-800">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex space-x-8">
+                        <button class="tab-button active text-white px-3 py-2 rounded-md text-sm font-medium" 
+                                onclick="showTab('overview')">Overview</button>
+                        <button class="tab-button text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium" 
+                                onclick="showTab('quests')">Quests</button>
+                        <button class="tab-button text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium" 
+                                onclick="showTab('cities')">Cities</button>
+                        <button class="tab-button text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium" 
+                                onclick="showTab('users')">Users</button>
+                        <button class="tab-button text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium" 
+                                onclick="showTab('achievements')">Achievements</button>
+                        <button class="tab-button text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium" 
+                                onclick="showTab('quest-stops')">Quest Stops</button>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Content -->
+            <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                <!-- Overview Tab -->
+                <div id="overview" class="tab-content active">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-lg font-semibold text-gray-900">Total Quests</h3>
+                            <p id="totalQuests" class="text-3xl font-bold text-blue-600">-</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-lg font-semibold text-gray-900">Active Users</h3>
+                            <p id="totalUsers" class="text-3xl font-bold text-green-600">-</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-lg font-semibold text-gray-900">Total Cities</h3>
+                            <p id="totalCities" class="text-3xl font-bold text-purple-600">-</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-lg font-semibold text-gray-900">Completions</h3>
+                            <p id="totalCompletions" class="text-3xl font-bold text-orange-600">-</p>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="bg-white rounded-lg shadow">
+                        <div class="px-6 py-4 border-b border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900">Recent Activity</h3>
+                        </div>
+                        <div class="p-6">
+                            <div id="recentActivity" class="space-y-4">
+                                <p class="text-gray-500">Loading recent activity...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quests Tab -->
+                <div id="quests" class="tab-content">
+                    <div class="bg-white rounded-lg shadow">
+                        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                            <h3 class="text-lg font-semibold text-gray-900">Quests Management</h3>
+                            <button id="addQuestBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                                Add New Quest
+                            </button>
+                        </div>
+                        <div class="p-6">
+                            <div id="questsList" class="space-y-4">
+                                <p class="text-gray-500">Loading quests...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cities Tab -->
+                <div id="cities" class="tab-content">
+                    <div class="bg-white rounded-lg shadow">
+                        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                            <h3 class="text-lg font-semibold text-gray-900">Cities Management</h3>
+                            <button id="addCityBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                                Add New City
+                            </button>
+                        </div>
+                        <div class="p-6">
+                            <div id="citiesList" class="space-y-4">
+                                <p class="text-gray-500">Loading cities...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Tab -->
+                <div id="users" class="tab-content">
+                    <div class="bg-white rounded-lg shadow">
+                        <div class="px-6 py-4 border-b border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900">Users Management</h3>
+                        </div>
+                        <div class="p-6">
+                            <div id="usersList" class="space-y-4">
+                                <p class="text-gray-500">Loading users...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Achievements Tab -->
+                <div id="achievements" class="tab-content">
+                    <div class="bg-white rounded-lg shadow">
+                        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                            <h3 class="text-lg font-semibold text-gray-900">Achievements Management</h3>
+                            <button id="addAchievementBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                                Add New Achievement
+                            </button>
+                        </div>
+                        <div class="p-6">
+                            <div id="achievementsList" class="space-y-4">
+                                <p class="text-gray-500">Loading achievements...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quest Stops Tab -->
+                <div id="quest-stops" class="tab-content">
+                    <div class="bg-white rounded-lg shadow mb-6">
+                        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                            <h3 class="text-lg font-semibold text-gray-900">Quest Stops Management</h3>
+                            <button id="addQuestStopBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                                Add New Quest Stop
+                            </button>
+                        </div>
+                        <div class="p-6">
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <!-- Map Column -->
+                                <div class="space-y-4">
+                                    <h4 class="text-md font-semibold text-gray-700">Map - Click to Add Stop</h4>
+                                    <div id="map" class="h-96 w-full border rounded-lg"></div>
+                                    <div class="text-sm text-gray-600">
+                                        <p>🗺️ Click on the map to select a location for a new quest stop</p>
+                                        <p>📍 Red markers are existing quest stops</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Quest Stops List -->
+                                <div class="space-y-4">
+                                    <h4 class="text-md font-semibold text-gray-700">Existing Quest Stops</h4>
+                                    <div id="questStopsList" class="space-y-2 max-h-96 overflow-y-auto">
+                                        <p class="text-gray-500">Loading quest stops...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+            <p class="mt-4 text-gray-700">Loading...</p>
+        </div>
+    </div>
+
+    <!-- Quest Stop Modal -->
+    <div id="questStopModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-lg w-96 max-w-md mx-4">
+            <h3 class="text-lg font-semibold mb-6">Add Quest Stop</h3>
+            <form id="questStopForm">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="questSelect">
+                        Quest
+                    </label>
+                    <select id="questSelect" class="shadow border rounded w-full py-2 px-3 text-gray-700" required>
+                        <option value="">Select a quest...</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="stopTitle">
+                        Stop Title
+                    </label>
+                    <input class="shadow border rounded w-full py-2 px-3 text-gray-700" 
+                           id="stopTitle" type="text" placeholder="Enter stop title" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="stopDescription">
+                        Description
+                    </label>
+                    <textarea class="shadow border rounded w-full py-2 px-3 text-gray-700 h-20" 
+                              id="stopDescription" placeholder="Enter stop description"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="challengeType">
+                        Challenge Type
+                    </label>
+                    <select id="challengeType" class="shadow border rounded w-full py-2 px-3 text-gray-700" required>
+                        <option value="location_only">Location Only</option>
+                        <option value="photo">Photo Challenge</option>
+                        <option value="text">Text Answer</option>
+                        <option value="trivia">Trivia Question</option>
+                        <option value="multiple_choice">Multiple Choice</option>
+                        <option value="qr_code">QR Code</option>
+                        <option value="audio">Audio Challenge</option>
+                        <option value="video">Video Challenge</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="stopPoints">
+                        Points
+                    </label>
+                    <input class="shadow border rounded w-full py-2 px-3 text-gray-700" 
+                           id="stopPoints" type="number" min="1" value="10" required>
+                </div>
+                <div id="selectedLocation" class="mb-4 text-sm text-gray-600">
+                    <p><strong>Selected Location:</strong> <span id="locationDisplay">None selected</span></p>
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" id="cancelQuestStop" 
+                            class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Create Stop
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html> 
