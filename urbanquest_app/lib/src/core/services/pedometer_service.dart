@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:pedometer/pedometer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -40,6 +41,13 @@ class PedometerService {
       _trackingStartTime = DateTime.now();
       _questStartTime = DateTime.now();
       _questSteps = 0;
+
+      // Skip pedometer initialization on web platform
+      if (kIsWeb) {
+        print('Pedometer tracking started for quest: $questId (Web mode - using mock data)');
+        await _saveTrackingState();
+        return true;
+      }
 
       await _initializeStepCount();
 
@@ -89,7 +97,7 @@ class PedometerService {
   }
 
   void _onStepCount(StepCount event) {
-    if (!_isTracking) return;
+    if (!_isTracking || kIsWeb) return;
 
     _currentStepCount = event.steps;
     
@@ -126,6 +134,11 @@ class PedometerService {
   }
 
   int getCurrentSteps() {
+    // Return mock data for web platform during tracking
+    if (kIsWeb && _isTracking && _questStartTime != null) {
+      final minutes = DateTime.now().difference(_questStartTime!).inMinutes;
+      return (minutes * 50).clamp(0, 2000); // Mock ~50 steps per minute
+    }
     return _questSteps;
   }
 
@@ -169,6 +182,15 @@ class PedometerService {
   }
 
   Future<void> _initializeStepCount() async {
+    if (kIsWeb) {
+      // Mock initialization for web platform
+      _initialStepCount = 0;
+      _currentStepCount = 0;
+      _questSteps = 0;
+      print('Initial step count: $_initialStepCount (Web mode)');
+      return;
+    }
+    
     try {
       final stepCountStream = Pedometer.stepCountStream;
       final stepCount = await stepCountStream.first.timeout(
@@ -303,17 +325,19 @@ class PedometerService {
       }
 
       if (_isTracking && _activeQuestId != null && _activeQuestId!.isNotEmpty) {
-        _stepCountStream = Pedometer.stepCountStream.listen(
-          _onStepCount,
-          onError: _onStepCountError,
-        );
+        if (!kIsWeb) {
+          _stepCountStream = Pedometer.stepCountStream.listen(
+            _onStepCount,
+            onError: _onStepCountError,
+          );
 
-        _pedestrianStatusStream = Pedometer.pedestrianStatusStream.listen(
-          _onPedestrianStatusChanged,
-          onError: _onPedestrianStatusError,
-        );
+          _pedestrianStatusStream = Pedometer.pedestrianStatusStream.listen(
+            _onPedestrianStatusChanged,
+            onError: _onPedestrianStatusError,
+          );
+        }
 
-        print('Restored tracking state for quest: $_activeQuestId');
+        print('Restored tracking state for quest: $_activeQuestId${kIsWeb ? ' (Web mode)' : ''}');
       }
     } catch (e) {
       print('Error restoring tracking state: $e');
@@ -321,6 +345,10 @@ class PedometerService {
   }
 
   Future<bool> isPedometerAvailable() async {
+    if (kIsWeb) {
+      return false; // Pedometer not available on web
+    }
+    
     try {
       await Pedometer.stepCountStream.first.timeout(const Duration(seconds: 3));
       return true;
@@ -331,6 +359,10 @@ class PedometerService {
   }
 
   Future<int> getTotalDailySteps() async {
+    if (kIsWeb) {
+      return 0; // No daily steps available on web
+    }
+    
     try {
       final stepCount = await Pedometer.stepCountStream.first.timeout(const Duration(seconds: 3));
       return stepCount.steps;

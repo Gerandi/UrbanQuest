@@ -44,11 +44,11 @@ class City {
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
       coverImageUrl: json['cover_image_url'] as String?,
-      questCount: json['quest_count'] as int,
-      totalPoints: json['total_points'] as int,
-      difficulty: (json['difficulty'] as num).toDouble(),
-      featured: json['featured'] as bool,
-      languageCode: json['language_code'] as String,
+      questCount: json['quest_count'] as int? ?? 0, // Handle nullable quest_count
+      totalPoints: json['total_points'] as int? ?? 0, // Handle nullable total_points
+      difficulty: (json['difficulty'] as num?)?.toDouble() ?? 1.0, // Handle nullable difficulty
+      featured: json['featured'] as bool? ?? false, // Handle nullable featured
+      languageCode: json['language_code'] as String? ?? 'en', // Handle nullable language_code
     );
   }
 }
@@ -412,7 +412,7 @@ class AppDataService {
         'app_config',
         select: 'value',
         eq: {'key': 'enable_test_mode'},
-        single: true,
+        maybeSingle: true,
       );
       
       final testModeEnabled = config.isNotEmpty ? config.first['value']['enabled'] as bool? ?? false : false;
@@ -424,7 +424,7 @@ class AppDataService {
         'app_config', 
         select: 'value',
         eq: {'key': 'test_user_emails'},
-        single: true,
+        maybeSingle: true,
       );
       
       final testEmails = testUsersConfig.isNotEmpty ? testUsersConfig.first['value']['emails'] as List? ?? [] : [];
