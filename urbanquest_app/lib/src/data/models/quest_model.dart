@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'quest_requirement_model.dart';
 
 part 'quest_model.g.dart';
 
@@ -19,6 +20,7 @@ class Quest extends Equatable {
   final String category;
   final int points;
   final List<String> tags;
+  final List<QuestRequirement> requirements;
 
   const Quest({
     required this.id,
@@ -35,6 +37,7 @@ class Quest extends Equatable {
     required this.category,
     required this.points,
     required this.tags,
+    this.requirements = const [],
   });
 
   factory Quest.fromJson(Map<String, dynamic> json) {
@@ -74,6 +77,7 @@ class Quest extends Equatable {
         category: categoryName.isNotEmpty ? categoryName : (json['category']?.toString() ?? 'General'),
         points: int.tryParse(json['base_points']?.toString() ?? '0') ?? 0,
         tags: _parseTagsList(json['tags']),
+        requirements: _parseRequirementsList(json['requirements']),
       );
     } catch (e) {
       print('Error parsing Quest from JSON: $e');
@@ -94,6 +98,7 @@ class Quest extends Equatable {
         category: 'Error',
         points: 0,
         tags: [],
+        requirements: [],
       );
     }
   }
@@ -115,6 +120,49 @@ class Quest extends Equatable {
     return [];
   }
 
+  static List<QuestRequirement> _parseRequirementsList(dynamic requirements) {
+    if (requirements == null) return [];
+    
+    if (requirements is List) {
+      return requirements
+          .map((req) {
+            try {
+              if (req is Map<String, dynamic>) {
+                return QuestRequirement.fromJson(req);
+              } else if (req is String) {
+                // Handle simple string format: "good_shoes,water,charged_phone"
+                final type = QuestRequirementType.fromId(req);
+                if (type != null) {
+                  return QuestRequirement(type: type);
+                }
+              }
+            } catch (e) {
+              print('Error parsing requirement: $e');
+            }
+            return null;
+          })
+          .where((req) => req != null)
+          .cast<QuestRequirement>()
+          .toList();
+    }
+    
+    if (requirements is String) {
+      // Handle comma-separated string format
+      return requirements
+          .split(',')
+          .map((req) => req.trim())
+          .map((reqId) {
+            final type = QuestRequirementType.fromId(reqId);
+            return type != null ? QuestRequirement(type: type) : null;
+          })
+          .where((req) => req != null)
+          .cast<QuestRequirement>()
+          .toList();
+    }
+    
+    return [];
+  }
+
   Map<String, dynamic> toJson() => _$QuestToJson(this);
 
   Quest copyWith({
@@ -132,6 +180,7 @@ class Quest extends Equatable {
     String? category,
     int? points,
     List<String>? tags,
+    List<QuestRequirement>? requirements,
   }) {
     return Quest(
       id: id ?? this.id,
@@ -148,6 +197,7 @@ class Quest extends Equatable {
       category: category ?? this.category,
       points: points ?? this.points,
       tags: tags ?? this.tags,
+      requirements: requirements ?? this.requirements,
     );
   }
 
@@ -167,5 +217,6 @@ class Quest extends Equatable {
         category,
         points,
         tags,
+        requirements,
       ];
 }
