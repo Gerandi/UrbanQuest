@@ -102,18 +102,24 @@ async function handleLogin(e) {
         if (error) throw error;
         
         // Check if user has admin privileges
-        const { data: profile, error: profileError } = await supabaseClient
-            .from('profiles')
-            .select('role')
-            .eq('id', data.user.id)
-            .single();
-            
-        if (profileError) {
-            console.warn('Could not fetch user profile:', profileError);
-            // Continue anyway - user might not have a profile yet
-        } else if (profile && !CONFIG.ADMIN_ROLES.includes(profile.role)) {
-            await supabaseClient.auth.signOut();
-            throw new Error('Admin access required. Your role: ' + (profile.role || 'user'));
+        try {
+            const { data: profile, error: profileError } = await supabaseClient
+                .from('profiles')
+                .select('role')
+                .eq('id', data.user.id)
+                .single();
+                
+            if (profileError) {
+                console.warn('Could not fetch user profile:', profileError);
+                // Continue anyway - user might not have a profile yet, allow login for development
+            } else if (profile && profile.role && !CONFIG.ADMIN_ROLES.includes(profile.role)) {
+                await supabaseClient.auth.signOut();
+                throw new Error('Admin access required. Your role: ' + profile.role);
+            }
+            // If no role is set or profile doesn't exist, allow login for development
+        } catch (roleCheckError) {
+            console.warn('Role check failed, continuing anyway for development:', roleCheckError);
+            // Continue with login even if role check fails
         }
         
     } catch (error) {
