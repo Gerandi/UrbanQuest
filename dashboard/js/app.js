@@ -103,7 +103,7 @@ async function handleLogin(e) {
         
         // Check if user has admin privileges
         const { data: profile, error: profileError } = await supabaseClient
-            .from('users')
+            .from('profiles')
             .select('role')
             .eq('id', data.user.id)
             .single();
@@ -232,9 +232,9 @@ async function loadOverviewData() {
         // Load statistics in parallel
         const [questsRes, usersRes, citiesRes, progressRes] = await Promise.all([
             supabaseClient.from('quests').select('id', { count: 'exact', head: true }),
-            supabaseClient.from('users').select('id', { count: 'exact', head: true }),
+            supabaseClient.from('profiles').select('id', { count: 'exact', head: true }),
             supabaseClient.from('cities').select('id', { count: 'exact', head: true }),
-            supabaseClient.from('user_quest_progress').select('id').eq('is_completed', true)
+            supabaseClient.from('user_quest_progress').select('id').eq('status', 'completed')
         ]);
         
         // Update statistics cards
@@ -266,7 +266,7 @@ async function loadRecentActivity() {
             .from('user_quest_progress')
             .select(`
                 *,
-                users(email),
+                profiles(email),
                 quests(title)
             `)
             .order('updated_at', { ascending: false })
@@ -280,10 +280,10 @@ async function loadRecentActivity() {
                 <div class="flex justify-between items-center py-3 border-b border-gray-100 last:border-b-0">
                     <div class="flex-1">
                         <p class="font-medium text-gray-900">
-                            ${progress.users?.email || 'Unknown User'}
+                            ${progress.profiles?.email || 'Unknown User'}
                         </p>
                         <p class="text-sm text-gray-600">
-                            ${progress.is_completed ? 'Completed' : 'Started'} 
+                            ${progress.status === 'completed' ? 'Completed' : 'Started'} 
                             "${progress.quests?.title || 'Unknown Quest'}"
                         </p>
                     </div>
