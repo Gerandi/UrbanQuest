@@ -1,24 +1,16 @@
 import '../models/quest_model.dart';
 import '../models/quest_stop_model.dart';
 import '../../core/services/supabase_service.dart';
+import '../services/app_data_service.dart';
 
 class QuestRepository {
   final SupabaseService _supabaseService = SupabaseService();
+  final AppDataService _appDataService = AppDataService.instance;
 
   /// Get all active quests
   Future<List<Quest>> getQuests() async {
     try {
-      final response = await _supabaseService.fetchFromTable(
-        'quests_with_city',
-        select: '''
-          *, 
-          quest_categories!inner(name, color, icon)
-        ''',
-        eq: {'is_active': true},
-        order: 'is_featured',
-        ascending: false,
-      );
-      return response.map((data) => Quest.fromJson(data)).toList();
+      return await _appDataService.getQuests();
     } catch (e) {
       print('Error getting all quests: $e');
       rethrow; // Let the UI handle the error properly
@@ -28,17 +20,7 @@ class QuestRepository {
   /// Get quests by city from backend
   Future<List<Quest>> getQuestsByCity(String cityId) async {
     try {
-      final response = await _supabaseService.fetchFromTable(
-        'quests_with_city',
-        select: '''
-          *, 
-          quest_categories!inner(name, color, icon)
-        ''',
-        eq: {'city_id': cityId, 'is_active': true},
-        order: 'is_featured',
-        ascending: false,
-      );
-      return response.map((data) => Quest.fromJson(data)).toList();
+      return await _appDataService.getQuests(cityId: cityId);
     } catch (e) {
       print('Error getting quests by city: $e');
       rethrow; // Let the UI handle the error properly
@@ -48,28 +30,46 @@ class QuestRepository {
   /// Get a specific quest by ID with full details
   Future<Quest?> getQuestById(String questId) async {
     try {
+      print('QuestRepository: Getting quest by ID: $questId');
+      final quest = await _appDataService.getQuestById(questId);
+      if (quest == null) {
+        print('QuestRepository: Quest not found with ID: $questId');
+        // Try fallback method
+        return await _getQuestByIdFallback(questId);
+      }
+      print('QuestRepository: Successfully found quest: ${quest.title}');
+      return quest;
+    } catch (e) {
+      print('Error getting quest by ID: $e');
+      // Try fallback method on error
+      return await _getQuestByIdFallback(questId);
+    }
+  }
+
+  /// Fallback method using direct table queries
+  Future<Quest?> _getQuestByIdFallback(String questId) async {
+    try {
+      print('QuestRepository: Using fallback method for quest ID: $questId');
       final questDetails = await _supabaseService.getQuestById(questId);
       if (questDetails == null || questDetails['quest'] == null) {
+        print('QuestRepository: Fallback also failed for quest ID: $questId');
         return null;
       }
 
-      return Quest.fromJson(questDetails['quest']);
+      final quest = Quest.fromJson(questDetails['quest']);
+      print('QuestRepository: Fallback succeeded for quest: ${quest.title}');
+      return quest;
     } catch (e) {
-      print('Error getting quest by ID: $e');
-      rethrow;
+      print('Error in fallback quest loading: $e');
+      return null;
     }
   }
 
   /// Get quest stops for a specific quest
   Future<List<QuestStop>> getQuestStops(String questId) async {
     try {
-      final questDetails = await _supabaseService.getQuestById(questId);
-      if (questDetails == null || questDetails['stops'] == null) {
-        return [];
-      }
-
-      final stops = questDetails['stops'] as List;
-      return stops.map((stopData) => QuestStop.fromJson(stopData as Map<String, dynamic>)).toList();
+      print('QuestRepository: Getting quest stops for quest ID: $questId');
+      return await _appDataService.getQuestStops(questId: questId);
     } catch (e) {
       print('Error getting quest stops: $e');
       rethrow;

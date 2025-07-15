@@ -21,23 +21,23 @@ class ProfileService {
       final currentUser = _supabaseService.currentUser;
       if (currentUser == null) return null;
 
-      final response = await _supabaseService.client
-          .from('users')
-          .select('''
+      final response = await _supabaseService.fetchFromTable(
+        'profiles',
+        select: '''
+          *,
+          user_stats(*),
+          user_achievements(
             *,
-            user_stats(*),
-            user_achievements(
-              *,
-              achievements(*)
-            ),
-            user_preferences(*)
-          ''')
-          .eq('id', currentUser.id)
-          .single();
+            achievements(*)
+          )
+        ''',
+        eq: {'id': currentUser.id},
+        single: true,
+      );
 
-      if (response == null) return null;
+      if (response.isEmpty) return null;
 
-      return _mapUserFromResponse(response);
+      return _mapUserFromResponse(response.first);
     } catch (e) {
       print('Error getting current user profile: $e');
       return null;
@@ -67,10 +67,7 @@ class ProfileService {
       
       updateData['updated_at'] = DateTime.now().toIso8601String();
 
-      await _supabaseService.client
-          .from('users')
-          .update(updateData)
-          .eq('id', userId);
+      await _supabaseService.updateTable('profiles', updateData, {'id': userId});
 
       // Update preferences if provided
       if (preferences != null) {
@@ -109,33 +106,35 @@ class ProfileService {
   Future<UserStats> calculateUserStats(String userId) async {
     try {
       // Get quest completions
-      final questCompletions = await _supabaseService.client
-          .from('user_quest_progress')
-          .select('''
-            *,
-            quests(title, city, difficulty, estimated_duration, points),
-            quest_photos(photo_url)
-          ''')
-          .eq('user_id', userId);
+      final questCompletions = await _supabaseService.fetchFromTable(
+        'user_quest_progress',
+        select: '''
+          *,
+          quests(title, city, difficulty, estimated_duration, points),
+          quest_photos(photo_url)
+        ''',
+        eq: {'user_id': userId},
+      );
 
       // Get achievements
-      final achievements = await _supabaseService.client
-          .from('user_achievements')
-          .select('*')
-          .eq('user_id', userId);
+      final achievements = await _supabaseService.fetchFromTable(
+        'user_achievements',
+        select: '*',
+        eq: {'user_id': userId},
+      );
 
       // Get quest stops visited
-      final stopsVisited = await _supabaseService.client
-          .from('user_quest_stop_progress')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('is_completed', true);
+      final stopsVisited = await _supabaseService.fetchFromTable(
+        'user_quest_stop_progress',
+        select: '*',
+        eq: {'user_id': userId, 'is_completed': true},
+      );
 
       // Calculate stats
       final stats = _calculateStatsFromData(
-        questCompletions: questCompletions ?? [],
-        achievements: achievements ?? [],
-        stopsVisited: stopsVisited ?? [],
+        questCompletions: questCompletions,
+        achievements: achievements,
+        stopsVisited: stopsVisited,
       );
 
       // Cache stats in database
@@ -151,17 +150,19 @@ class ProfileService {
   // Get user achievements
   Future<List<Achievement>> getUserAchievements(String userId) async {
     try {
-      final response = await _supabaseService.client
-          .from('user_achievements')
-          .select('''
-            *,
-            achievements(*)
-          ''')
-          .eq('user_id', userId)
-          .order('unlocked_at', ascending: false);
+      final response = await _supabaseService.fetchFromTable(
+        'user_achievements',
+        select: '''
+          *,
+          achievements(*)
+        ''',
+        eq: {'user_id': userId},
+        order: 'unlocked_at',
+        ascending: false,
+      );
 
-      return response?.map<Achievement>((data) => 
-          Achievement.fromJson(data['achievements'])).toList() ?? [];
+      return response.map<Achievement>((data) => 
+          Achievement.fromJson(data['achievements'])).toList();
     } catch (e) {
       print('Error getting user achievements: $e');
       return [];
@@ -172,23 +173,25 @@ class ProfileService {
   Future<List<Achievement>> getAvailableAchievements(String userId) async {
     try {
       // Get all achievements
-      final allAchievements = await _supabaseService.client
-          .from('achievements')
-          .select('*')
-          .eq('is_active', true);
+      final allAchievements = await _supabaseService.fetchFromTable(
+        'achievements',
+        select: '*',
+        eq: {'is_active': true},
+      );
 
       // Get user's earned achievements
-      final earnedAchievements = await _supabaseService.client
-          .from('user_achievements')
-          .select('achievement_id')
-          .eq('user_id', userId);
+      final earnedAchievements = await _supabaseService.fetchFromTable(
+        'user_achievements',
+        select: 'achievement_id',
+        eq: {'user_id': userId},
+      );
 
-      final earnedIds = earnedAchievements?.map((e) => e['achievement_id']).toSet() ?? {};
+      final earnedIds = earnedAchievements.map((e) => e['achievement_id']).toSet();
 
-      return allAchievements?.where((achievement) => 
+      return allAchievements.where((achievement) => 
           !earnedIds.contains(achievement['id']))
           .map<Achievement>((data) => Achievement.fromJson(data))
-          .toList() ?? [];
+          .toList();
     } catch (e) {
       print('Error getting available achievements: $e');
       return [];
@@ -198,23 +201,24 @@ class ProfileService {
   // Get user's quest history
   Future<List<Quest>> getUserQuestHistory(String userId) async {
     try {
-      final response = await _supabaseService.client
-          .from('user_quest_progress')
-          .select('''
+      final response = await _supabaseService.fetchFromTable(
+        'user_quest_progress',
+        select: '''
+          *,
+          quests(
             *,
-            quests(
-              *,
-              cities(name),
-              quest_categories(name),
-              quest_stops(id)
-            )
-          ''')
-          .eq('user_id', userId)
-          .eq('is_completed', true)
-          .order('completed_at', ascending: false);
+            cities(name),
+            quest_categories(name),
+            quest_stops(id)
+          )
+        ''',
+        eq: {'user_id': userId, 'is_completed': true},
+        order: 'completed_at',
+        ascending: false,
+      );
 
-      return response?.map<Quest>((data) => 
-          Quest.fromJson(data['quests'])).toList() ?? [];
+      return response.map<Quest>((data) => 
+          Quest.fromJson(data['quests'])).toList();
     } catch (e) {
       print('Error getting user quest history: $e');
       return [];
@@ -224,23 +228,24 @@ class ProfileService {
   // Get user's in-progress quests
   Future<List<Quest>> getUserInProgressQuests(String userId) async {
     try {
-      final response = await _supabaseService.client
-          .from('user_quest_progress')
-          .select('''
+      final response = await _supabaseService.fetchFromTable(
+        'user_quest_progress',
+        select: '''
+          *,
+          quests(
             *,
-            quests(
-              *,
-              cities(name),
-              quest_categories(name),
-              quest_stops(id)
-            )
-          ''')
-          .eq('user_id', userId)
-          .eq('is_completed', false)
-          .order('started_at', ascending: false);
+            cities(name),
+            quest_categories(name),
+            quest_stops(id)
+          )
+        ''',
+        eq: {'user_id': userId, 'is_completed': false},
+        order: 'started_at',
+        ascending: false,
+      );
 
-      return response?.map<Quest>((data) => 
-          Quest.fromJson(data['quests'])).toList() ?? [];
+      return response.map<Quest>((data) => 
+          Quest.fromJson(data['quests'])).toList();
     } catch (e) {
       print('Error getting user in-progress quests: $e');
       return [];
@@ -250,8 +255,10 @@ class ProfileService {
   // Get user's leaderboard position
   Future<int> getUserLeaderboardPosition(String userId) async {
     try {
-      final response = await _supabaseService.client
-          .rpc('get_user_leaderboard_position', params: {'user_id': userId});
+      final response = await _supabaseService.callRpc(
+        'get_user_leaderboard_position',
+        params: {'user_id': userId},
+      );
       
       return response ?? -1;
     } catch (e) {
@@ -288,13 +295,15 @@ class ProfileService {
   // Update user preferences
   Future<bool> _updateUserPreferences(String userId, Map<String, dynamic> preferences) async {
     try {
-      await _supabaseService.client
-          .from('user_preferences')
-          .upsert({
-            'user_id': userId,
-            ...preferences,
-            'updated_at': DateTime.now().toIso8601String(),
-          });
+      await _supabaseService.updateTable(
+        'user_preferences',
+        {
+          'user_id': userId,
+          ...preferences,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        {'user_id': userId},
+      );
       
       return true;
     } catch (e) {
@@ -308,18 +317,15 @@ class ProfileService {
     try {
       // Delete related data first (due to foreign key constraints)
       await Future.wait([
-        _supabaseService.client.from('user_quest_progress').delete().eq('user_id', userId),
-        _supabaseService.client.from('user_quest_stop_progress').delete().eq('user_id', userId),
-        _supabaseService.client.from('user_achievements').delete().eq('user_id', userId),
-        _supabaseService.client.from('user_preferences').delete().eq('user_id', userId),
-        _supabaseService.client.from('quest_photos').delete().eq('user_id', userId),
+        _supabaseService.deleteFromTable('user_quest_progress', {'user_id': userId}),
+        _supabaseService.deleteFromTable('user_quest_stop_progress', {'user_id': userId}),
+        _supabaseService.deleteFromTable('user_achievements', {'user_id': userId}),
+        _supabaseService.deleteFromTable('user_preferences', {'user_id': userId}),
+        _supabaseService.deleteFromTable('quest_photos', {'user_id': userId}),
       ]);
 
       // Delete user record
-      await _supabaseService.client
-          .from('users')
-          .delete()
-          .eq('id', userId);
+      await _supabaseService.deleteFromTable('profiles', {'id': userId});
 
       // Delete profile photo if exists
       try {
@@ -463,13 +469,15 @@ class ProfileService {
 
   Future<void> _cacheUserStats(String userId, UserStats stats) async {
     try {
-      await _supabaseService.client
-          .from('user_stats')
-          .upsert({
-            'user_id': userId,
-            ...stats.toJson(),
-            'updated_at': DateTime.now().toIso8601String(),
-          });
+      await _supabaseService.updateTable(
+        'user_stats',
+        {
+          'user_id': userId,
+          ...stats.toJson(),
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        {'user_id': userId},
+      );
     } catch (e) {
       print('Error caching user stats: $e');
     }
@@ -496,13 +504,14 @@ class ProfileService {
 
   Future<void> _unlockAchievement(String userId, String achievementId) async {
     try {
-      await _supabaseService.client
-          .from('user_achievements')
-          .insert({
-            'user_id': userId,
-            'achievement_id': achievementId,
-            'unlocked_at': DateTime.now().toIso8601String(),
-          });
+      await _supabaseService.insertIntoTable(
+        'user_achievements',
+        {
+          'user_id': userId,
+          'achievement_id': achievementId,
+          'unlocked_at': DateTime.now().toIso8601String(),
+        },
+      );
     } catch (e) {
       print('Error unlocking achievement: $e');
     }

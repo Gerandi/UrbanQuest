@@ -286,9 +286,9 @@ class AppDataService {
         order: 'order_index',
       );
 
-      final stopsJson = response as List;
+      final stopsJson = response;
       final stops = stopsJson
-          .map((stop) => QuestStop.fromJson(stop as Map<String, dynamic>))
+          .map((stop) => QuestStop.fromJson(stop))
           .toList();
       
       _questStopsCache[cacheKey] = stops;

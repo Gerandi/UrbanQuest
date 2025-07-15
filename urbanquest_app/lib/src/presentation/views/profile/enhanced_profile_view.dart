@@ -420,36 +420,37 @@ class _EnhancedProfileViewState extends State<EnhancedProfileView> {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: CustomButton(
-                  text: 'Edit Profile',
-                  onPressed: _showEditProfileDialog,
-                  icon: Icons.edit,
-                  variant: ButtonVariant.outline,
-                  size: ButtonSize.medium,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: CustomButton(
-                  text: 'Share App',
-                  onPressed: _shareApp,
-                  icon: Icons.share,
-                  variant: ButtonVariant.outline,
-                  size: ButtonSize.medium,
-                ),
-              ),
-            ],
+          SizedBox(
+            width: double.infinity,
+            child: CustomButton(
+              text: 'Edit Profile',
+              onPressed: _showEditProfileDialog,
+              icon: Icons.edit,
+              variant: ButtonVariant.primary,
+              size: ButtonSize.large,
+            ),
           ),
           const SizedBox(height: 12),
-          CustomButton(
-            text: 'Sign Out',
-            onPressed: _showSignOutDialog,
-            icon: Icons.logout,
-            variant: ButtonVariant.outline,
-            size: ButtonSize.large,
+          SizedBox(
+            width: double.infinity,
+            child: CustomButton(
+              text: 'Share App',
+              onPressed: _shareApp,
+              icon: Icons.share,
+              variant: ButtonVariant.outline,
+              size: ButtonSize.large,
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: CustomButton(
+              text: 'Sign Out',
+              onPressed: _showSignOutDialog,
+              icon: Icons.logout,
+              variant: ButtonVariant.outline,
+              size: ButtonSize.large,
+            ),
           ),
         ],
       ),
@@ -462,10 +463,9 @@ class _EnhancedProfileViewState extends State<EnhancedProfileView> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Change Profile Photo'),
-        content: ProfilePhotoUpload(
-          currentPhotoUrl: currentUser?.avatar,
-          userId: currentUser!.id,
-          onPhotoChanged: (photoUrl) {
+        content: PhotoUploadWidget(
+          uploadPath: 'profile_photos',
+          onPhotoUploaded: (photoUrl) {
             setState(() {
               currentUser = currentUser!.copyWith(avatar: photoUrl);
             });
@@ -479,7 +479,9 @@ class _EnhancedProfileViewState extends State<EnhancedProfileView> {
 
   void _showEditProfileDialog() {
     final nameController = TextEditingController(text: currentUser?.displayName);
-    final bioController = TextEditingController(text: currentUser?.bio);
+    final bioController = TextEditingController(text: currentUser?.bio ?? '');
+    final locationController = TextEditingController(text: currentUser?.location ?? '');
+    final phoneController = TextEditingController(text: currentUser?.phoneNumber ?? '');
     
     showDialog(
       context: context,
@@ -501,6 +503,18 @@ class _EnhancedProfileViewState extends State<EnhancedProfileView> {
                 prefixIcon: Icons.info,
                 maxLines: 3,
               ),
+              const SizedBox(height: 16),
+              CustomTextField(
+                controller: locationController,
+                labelText: 'Location',
+                prefixIcon: Icons.location_on,
+              ),
+              const SizedBox(height: 16),
+              CustomTextField(
+                controller: phoneController,
+                labelText: 'Phone Number',
+                prefixIcon: Icons.phone,
+              ),
             ],
           ),
         ),
@@ -513,11 +527,15 @@ class _EnhancedProfileViewState extends State<EnhancedProfileView> {
             onPressed: () async {
               final newName = nameController.text.trim();
               final newBio = bioController.text.trim();
+              final newLocation = locationController.text.trim();
+              final newPhone = phoneController.text.trim();
               
               final success = await _profileService.updateUserProfile(
                 userId: currentUser!.id,
                 displayName: newName.isNotEmpty ? newName : null,
                 bio: newBio.isNotEmpty ? newBio : null,
+                location: newLocation.isNotEmpty ? newLocation : null,
+                phoneNumber: newPhone.isNotEmpty ? newPhone : null,
               );
               
               if (success) {
@@ -525,6 +543,8 @@ class _EnhancedProfileViewState extends State<EnhancedProfileView> {
                   currentUser = currentUser!.copyWith(
                     displayName: newName,
                     bio: newBio,
+                    location: newLocation,
+                    phoneNumber: newPhone,
                   );
                 });
                 Navigator.pop(context);
@@ -602,7 +622,9 @@ class _EnhancedProfileViewState extends State<EnhancedProfileView> {
   }
 
   void _showQuestHistoryDetails() {
-    // Navigate to quest history view
+    if (widget.onNavigate != null) {
+      widget.onNavigate!(AppView.home);
+    }
   }
 
   void _onQuestTap(Quest quest) {

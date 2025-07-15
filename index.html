@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UrbanQuest - Redirecting to Dashboard</title>
+    <meta http-equiv="refresh" content="0; url=/UrbanQuest/dashboard/">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .logo {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+        .loading {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .manual-link {
+            margin-top: 2rem;
+            opacity: 0.8;
+        }
+        .manual-link a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 2px solid white;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        .manual-link a:hover {
+            background: white;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">🗺️ UrbanQuest</div>
+        <div class="subtitle">Exploring Albanian Cities</div>
+        <div class="loading"></div>
+        <p style="margin-top: 1rem;">Redirecting to Dashboard...</p>
+        
+        <div class="manual-link">
+            <p>If you're not redirected automatically:</p>
+            <a href="/UrbanQuest/dashboard/">Go to Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        // Fallback redirect in case meta refresh doesn't work
+        setTimeout(function() {
+            window.location.href = '/UrbanQuest/dashboard/';
+        }, 2000);
+    </script>
+</body>
+</html>
