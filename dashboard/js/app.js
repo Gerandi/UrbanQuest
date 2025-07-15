@@ -407,17 +407,29 @@ async function loadTabData(tabName) {
     }
 }
 
-// Placeholder modal functions (to be implemented in specific modules)
+// Modal functions that delegate to specific modules
 function showQuestModal(quest = null) {
-    Utils.showToast('Quest management modal coming soon!', 'info');
+    if (window.Quests && window.Quests.showQuestModal) {
+        window.Quests.showQuestModal(quest);
+    } else {
+        Utils.showToast('Quest management not available', 'error');
+    }
 }
 
 function showCityModal(city = null) {
-    Utils.showToast('City management modal coming soon!', 'info');
+    if (window.Cities && window.Cities.showCityModal) {
+        window.Cities.showCityModal(city);
+    } else {
+        Utils.showToast('City management not available', 'error');
+    }
 }
 
 function showCategoryModal(category = null) {
-    Utils.showToast('Category management modal coming soon!', 'info');
+    if (window.Categories && window.Categories.showCategoryModal) {
+        window.Categories.showCategoryModal(category);
+    } else {
+        Utils.showToast('Category management not available', 'error');
+    }
 }
 
 // Utility functions for common operations

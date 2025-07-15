@@ -475,29 +475,86 @@ async function exportUsers() {
     }
 }
 
-// Send notification to user (placeholder)
+// Send notification to user
 async function sendNotificationToUser(userId, message) {
     try {
-        // This would integrate with your notification system
-        // For now, just show a placeholder
-        Utils.showToast('Notification feature coming soon!', 'info');
+        showLoading(true);
+        
+        // Insert notification into the database
+        const notificationData = {
+            user_id: userId,
+            message: message,
+            created_at: new Date().toISOString(),
+            is_read: false,
+            type: 'admin_message'
+        };
+        
+        const { error } = await supabaseClient
+            .from('notifications')
+            .insert([notificationData]);
+            
+        if (error) {
+            // If notifications table doesn't exist, show a helpful message
+            if (error.code === '42P01') {
+                Utils.showToast('Notifications table not found. Create the notifications table in your database first.', 'warning');
+                return;
+            }
+            throw error;
+        }
+        
+        Utils.showToast('Notification sent successfully!', 'success');
         
     } catch (error) {
         Utils.handleError(error, 'Failed to send notification');
+    } finally {
+        showLoading(false);
     }
 }
 
-// Ban/unban user (placeholder)
+// Ban/unban user
 async function toggleUserBan(userId, isBanned) {
     try {
+        showLoading(true);
+        
         const action = isBanned ? 'banned' : 'unbanned';
         
-        // This would update a banned/suspended status field
-        // For now, just show a placeholder
-        Utils.showToast(`User ${action} successfully! (Feature coming soon)`, 'info');
+        // Update user's banned status
+        const { error } = await supabaseClient
+            .from('users')
+            .update({ 
+                is_banned: isBanned,
+                banned_at: isBanned ? new Date().toISOString() : null,
+                banned_reason: isBanned ? 'Banned by administrator' : null
+            })
+            .eq('id', userId);
+            
+        if (error) {
+            // If is_banned column doesn't exist, show a helpful message
+            if (error.code === '42703') {
+                Utils.showToast('User ban fields not found. Add is_banned, banned_at, and banned_reason columns to your users table.', 'warning');
+                return;
+            }
+            throw error;
+        }
+        
+        // Send notification to user about ban status change
+        const message = isBanned 
+            ? 'Your account has been suspended by an administrator.' 
+            : 'Your account suspension has been lifted.';
+            
+        try {
+            await sendNotificationToUser(userId, message);
+        } catch (notifError) {
+            console.warn('Failed to send ban notification:', notifError);
+        }
+        
+        Utils.showToast(`User ${action} successfully!`, 'success');
+        await loadUsersData(); // Refresh user list
         
     } catch (error) {
         Utils.handleError(error, `Failed to ${isBanned ? 'ban' : 'unban'} user`);
+    } finally {
+        showLoading(false);
     }
 }
 
