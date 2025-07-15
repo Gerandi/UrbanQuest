@@ -315,6 +315,19 @@ function showNotification(message, type = 'info') {
     return showToast(message, type);
 }
 
+// Escape HTML to prevent XSS attacks
+function escapeHtml(text) {
+    if (typeof text !== 'string') return text;
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+
 // Export utilities for use in other files
 window.Utils = {
     showToast,
@@ -347,5 +360,6 @@ window.Utils = {
     checkConnection,
     createFallbackModal,
     ensureModalManager,
-    generateId
+    generateId,
+    escapeHtml
 };

@@ -37,7 +37,7 @@ const UserManager = {
     async loadUsers() {
         try {
             const { data: users, error } = await supabase
-                .from('users')
+                .from('profiles')
                 .select('*')
                 .order('created_at', { ascending: false });
 
@@ -116,7 +116,7 @@ const UserManager = {
 
         try {
             const { error } = await supabase
-                .from('users')
+                .from('profiles')
                 .delete()
                 .eq('id', userId);
 
