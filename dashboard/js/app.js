@@ -120,7 +120,8 @@ async function handleAuthSuccess(user) {
     
     // Set up navigation and load initial data
     setupNavigation();
-    showTab('quests');
+    initializeDarkMode();
+    showTab('overview');
     
     console.log('✅ User authenticated successfully');
 }
@@ -180,31 +181,148 @@ function showTab(tabName) {
     // Hide all tab contents
     const allTabs = document.querySelectorAll('.tab-content');
     allTabs.forEach(tab => {
-        tab.style.display = 'none';
+        tab.classList.add('hidden');
+        tab.classList.remove('animate-fade-in');
     });
     
-    // Remove active class from all nav buttons
-    const allNavButtons = document.querySelectorAll('[data-tab]');
-    allNavButtons.forEach(button => {
-        button.classList.remove('bg-indigo-600', 'text-white');
-        button.classList.add('text-gray-600', 'hover:text-gray-900');
+    // Remove active class from all sidebar buttons
+    const allSidebarItems = document.querySelectorAll('.sidebar-item');
+    allSidebarItems.forEach(button => {
+        button.classList.remove('active');
     });
     
-    // Show selected tab
-    const selectedTab = document.getElementById(tabName + 'Tab');
+    // Show selected tab with animation
+    const selectedTab = document.getElementById(tabName);
     if (selectedTab) {
-        selectedTab.style.display = 'block';
+        selectedTab.classList.remove('hidden');
+        selectedTab.classList.add('animate-fade-in');
     }
     
-    // Add active class to selected nav button
-    const selectedNavButton = document.querySelector(`[data-tab="${tabName}"]`);
+    // Add active class to selected sidebar button
+    const selectedNavButton = document.querySelector(`[onclick="showTab('${tabName}')"]`);
     if (selectedNavButton) {
-        selectedNavButton.classList.add('bg-indigo-600', 'text-white');
-        selectedNavButton.classList.remove('text-gray-600', 'hover:text-gray-900');
+        selectedNavButton.classList.add('active');
     }
+    
+    // Update page title
+    updatePageTitle(tabName);
     
     // Load data for the selected tab
     loadTabData(tabName);
+}
+
+// Update page title based on current tab
+function updatePageTitle(tabName) {
+    const pageTitle = document.getElementById('pageTitle');
+    const titles = {
+        'overview': 'Dashboard',
+        'users': 'Profile Management',
+        'cities': 'City Management', 
+        'quests': 'Quest Management',
+        'quest-stops': 'Quest Stops Management',
+        'categories': 'Categories Management',
+        'analytics': 'Analytics & Reports'
+    };
+    
+    if (pageTitle && titles[tabName]) {
+        pageTitle.textContent = titles[tabName];
+    }
+}
+
+// Load overview data for the dashboard
+async function loadOverviewData() {
+    try {
+        // Load statistics in parallel
+        const [questsRes, usersRes, citiesRes, progressRes] = await Promise.all([
+            window.supabase.from('quests').select('id', { count: 'exact', head: true }),
+            window.supabase.from('profiles').select('id', { count: 'exact', head: true }),
+            window.supabase.from('cities').select('id', { count: 'exact', head: true }),
+            window.supabase.from('user_quest_progress').select('id').eq('status', 'completed')
+        ]);
+        
+        // Update stat cards
+        const totalQuests = document.getElementById('totalQuests');
+        const totalUsers = document.getElementById('totalUsers');
+        const totalCities = document.getElementById('totalCities');
+        const totalCompletions = document.getElementById('totalCompletions');
+        
+        if (totalQuests) totalQuests.textContent = Utils.formatNumber(questsRes.count || 0);
+        if (totalUsers) totalUsers.textContent = Utils.formatNumber(usersRes.count || 0);
+        if (totalCities) totalCities.textContent = Utils.formatNumber(citiesRes.count || 0);
+        if (totalCompletions) totalCompletions.textContent = Utils.formatNumber(progressRes.data?.length || 0);
+        
+        // Load recent activity
+        await loadRecentActivity();
+        
+    } catch (error) {
+        console.error('Error loading overview data:', error);
+        Utils.showNotification('Error loading dashboard statistics', 'error');
+        
+        // Set fallback values
+        document.getElementById('totalQuests').textContent = '-';
+        document.getElementById('totalUsers').textContent = '-';
+        document.getElementById('totalCities').textContent = '-';
+        document.getElementById('totalCompletions').textContent = '-';
+    }
+}
+
+// Load recent activity
+async function loadRecentActivity() {
+    try {
+        const { data: recentProgress } = await window.supabase
+            .from('user_quest_progress')
+            .select(`
+                *,
+                profiles(display_name, email),
+                quests(title)
+            `)
+            .order('updated_at', { ascending: false })
+            .limit(10);
+            
+        const activityContainer = document.getElementById('recentActivity');
+        if (!activityContainer) return;
+        
+        if (!recentProgress || recentProgress.length === 0) {
+            activityContainer.innerHTML = `
+                <div class="text-center py-4 text-gray-500">
+                    <i class="fas fa-info-circle mr-2"></i>No recent activity found
+                </div>
+            `;
+            return;
+        }
+        
+        activityContainer.innerHTML = recentProgress.map(progress => `
+            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-orange-100 dark:bg-orange-900/50 rounded-full flex items-center justify-center mr-3">
+                        <i class="fas fa-user text-orange-500 text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            ${Utils.escapeHtml(progress.profiles?.display_name || 'Unknown User')}
+                        </p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            ${progress.status === 'completed' ? 'Completed' : 'Started'} "${Utils.escapeHtml(progress.quests?.title || 'Unknown Quest')}"
+                        </p>
+                    </div>
+                </div>
+                <div class="text-xs text-gray-400">
+                    ${Utils.formatDate(progress.updated_at)}
+                </div>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error loading recent activity:', error);
+        const activityContainer = document.getElementById('recentActivity');
+        if (activityContainer) {
+            activityContainer.innerHTML = `
+                <div class="text-center py-4 text-red-500">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>Error loading recent activity
+                </div>
+            `;
+        }
+    }
 }
 
 // Load data for specific tab
@@ -213,6 +331,10 @@ async function loadTabData(tabName) {
     
     try {
         switch (tabName) {
+            case 'overview':
+                // Load overview statistics
+                await loadOverviewData();
+                break;
             case 'quests':
                 if (window.QuestManager && window.QuestManager.loadQuests) {
                     await window.QuestManager.loadQuests();
@@ -238,6 +360,13 @@ async function loadTabData(tabName) {
                     await window.UserManager.loadUsers();
                 }
                 break;
+            case 'analytics':
+                if (typeof loadAnalyticsData === 'function') {
+                    await loadAnalyticsData();
+                } else {
+                    console.error('Analytics functionality not available');
+                }
+                break;
             default:
                 console.warn('Unknown tab:', tabName);
         }
@@ -247,7 +376,55 @@ async function loadTabData(tabName) {
     }
 }
 
+// Dark Mode Toggle
+function toggleDarkMode() {
+    const html = document.documentElement;
+    const isDark = html.classList.contains('dark');
+    const darkModeIcon = document.getElementById('darkModeIcon');
+    
+    if (isDark) {
+        html.classList.remove('dark');
+        localStorage.setItem('darkMode', 'false');
+        if (darkModeIcon) {
+            darkModeIcon.className = 'fas fa-moon text-lg';
+        }
+    } else {
+        html.classList.add('dark');
+        localStorage.setItem('darkMode', 'true');
+        if (darkModeIcon) {
+            darkModeIcon.className = 'fas fa-sun text-lg';
+        }
+    }
+}
+
+// Initialize dark mode from localStorage
+function initializeDarkMode() {
+    const savedDarkMode = localStorage.getItem('darkMode');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedDarkMode === 'true' || (savedDarkMode === null && prefersDark)) {
+        document.documentElement.classList.add('dark');
+        const darkModeIcon = document.getElementById('darkModeIcon');
+        if (darkModeIcon) {
+            darkModeIcon.className = 'fas fa-sun text-lg';
+        }
+    }
+}
+
+// Settings Toggle
+function toggleSettings() {
+    Utils.showNotification('Settings panel coming soon!', 'info');
+}
+
 // Add New Item functions (called by the + buttons in the header)
+function addNewUser() {
+    if (window.UserManager && window.UserManager.createUser) {
+        window.UserManager.createUser();
+    } else {
+        showModal('user');
+    }
+}
+
 function addNewQuest() {
     if (window.QuestManager && window.QuestManager.createQuest) {
         window.QuestManager.createQuest();
@@ -282,6 +459,9 @@ function addNewCategory() {
 
 // Make functions globally available
 window.showTab = showTab;
+window.toggleDarkMode = toggleDarkMode;
+window.toggleSettings = toggleSettings;
+window.addNewUser = addNewUser;
 window.addNewQuest = addNewQuest;
 window.addNewQuestStop = addNewQuestStop;
 window.addNewCity = addNewCity;

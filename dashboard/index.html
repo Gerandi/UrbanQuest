@@ -4,199 +4,248 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UrbanQuest Admin Dashboard</title>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <!-- Development only - replace with proper Tailwind CSS build for production -->
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="css/styles.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <!-- Custom Styles -->
     <style>
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .tab-button.active { @apply bg-blue-500 text-white; }
-        .modal { display: none; }
-        .modal.active { display: flex; }
-        .challenge-form { display: none; }
-        .challenge-form.active { display: block; }
-        .form-section { display: none; }
-        .form-section.active { display: block; }
-        .toast { transition: all 0.3s ease; }
-        .fade-in { animation: fadeIn 0.3s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    </style>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#3B82F6',
-                        secondary: '#8B5CF6',
-                        success: '#10B981',
-                        warning: '#F59E0B',
-                        danger: '#EF4444'
-                    }
-                }
-            }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in-out;
         }
-    </script>
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .sidebar-item.active {
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(249, 115, 22, 0.3);
+        }
+        
+        .sidebar-item:hover:not(.active) {
+            background-color: #f3f4f6;
+        }
+        
+        .dark .sidebar-item:hover:not(.active) {
+            background-color: #374151;
+        }
+        
+        .table-row:hover {
+            background-color: #f9fafb;
+        }
+        
+        .dark .table-row:hover {
+            background-color: rgba(55, 65, 81, 0.5);
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a1a1a1;
+        }
+    </style>
 </head>
-<body class="bg-gray-50">
-    <div id="app" class="min-h-screen">
-        <!-- Login Form -->
-        <div id="loginForm" class="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-500 to-purple-600">
-            <div class="bg-white p-8 rounded-xl shadow-2xl w-96 max-w-md mx-4">
-                <div class="text-center mb-8">
-                    <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mx-auto mb-4 flex items-center justify-center">
-                        <i class="fas fa-map-marked-alt text-white text-2xl"></i>
-                    </div>
-                    <h1 class="text-3xl font-bold text-gray-800">UrbanQuest</h1>
-                    <p class="text-gray-600">Admin Dashboard</p>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-sans">
+    <!-- Login Form -->
+    <div id="loginForm" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-400 via-red-500 to-pink-500">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">Urban Quest</h1>
+                <p class="text-gray-600 dark:text-gray-400 mt-2">Admin Dashboard</p>
+            </div>
+            
+            <form id="loginFormElement" class="space-y-6">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                    <input type="email" id="email" name="email" required 
+                           class="mt-1 block w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
                 </div>
-                <form id="loginFormElement">
-                    <div class="mb-6">
-                        <label class="block text-gray-700 text-sm font-semibold mb-2" for="email">
-                            <i class="fas fa-envelope mr-2"></i>Email Address
-                        </label>
-                        <input class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                               id="email" type="email" placeholder="admin@urbanquest.com" required>
-                    </div>
-                    <div class="mb-6">
-                        <label class="block text-gray-700 text-sm font-semibold mb-2" for="password">
-                            <i class="fas fa-lock mr-2"></i>Password
-                        </label>
-                        <input class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
-                               id="password" type="password" placeholder="Enter your password" required>
-                    </div>
-                    <button class="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200" 
-                            type="submit">
-                        <i class="fas fa-sign-in-alt mr-2"></i>Sign In
-                    </button>
-                </form>
-                <div id="loginError" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden">
-                    <i class="fas fa-exclamation-triangle mr-2"></i>
-                    <span id="loginErrorText"></span>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+                    <input type="password" id="password" name="password" required 
+                           class="mt-1 block w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
                 </div>
+                
+                <button type="submit" 
+                        class="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 transform hover:scale-105">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+                </button>
+            </form>
+            
+            <div id="loginError" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                <span id="loginErrorText"></span>
             </div>
         </div>
+    </div>
 
-        <!-- Dashboard -->
-        <div id="dashboard" class="hidden">
-            <!-- Header -->
-            <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="flex justify-between items-center py-4">
+    <!-- Dashboard -->
+    <div id="dashboard" class="hidden">
+        <div class="flex h-screen bg-gray-100 dark:bg-gray-900">
+            <!-- Sidebar -->
+            <aside class="w-64 bg-white dark:bg-gray-800 shadow-lg flex flex-col">
+                <!-- Logo -->
+                <div class="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-700">
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
+                        Urban Quest Admin
+                    </h1>
+                </div>
+                
+                <!-- Navigation -->
+                <nav class="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
+                    <button onclick="showTab('overview')" class="sidebar-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="fas fa-chart-line w-5 h-5 mr-3"></i>
+                        Dashboard
+                    </button>
+                    <button onclick="showTab('users')" class="sidebar-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="fas fa-users w-5 h-5 mr-3"></i>
+                        Profiles
+                    </button>
+                    <button onclick="showTab('cities')" class="sidebar-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="fas fa-city w-5 h-5 mr-3"></i>
+                        Cities
+                    </button>
+                    <button onclick="showTab('quests')" class="sidebar-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="fas fa-map w-5 h-5 mr-3"></i>
+                        Quests
+                    </button>
+                    <button onclick="showTab('quest-stops')" class="sidebar-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="fas fa-map-marker-alt w-5 h-5 mr-3"></i>
+                        Quest Stops
+                    </button>
+                    <button onclick="showTab('categories')" class="sidebar-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="fas fa-tags w-5 h-5 mr-3"></i>
+                        Categories
+                    </button>
+                    <button onclick="showTab('analytics')" class="sidebar-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                        <i class="fas fa-chart-pie w-5 h-5 mr-3"></i>
+                        Analytics
+                    </button>
+                </nav>
+                
+                <!-- Settings & User Info -->
+                <div class="mt-auto border-t border-gray-200 dark:border-gray-700">
+                    <div class="p-4">
+                        <button onclick="toggleSettings()" class="sidebar-item w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200">
+                            <i class="fas fa-cog w-5 h-5 mr-3"></i>
+                            Settings
+                        </button>
+                    </div>
+                    <div class="p-4 border-t border-gray-200 dark:border-gray-700">
                         <div class="flex items-center">
-                            <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg mr-3 flex items-center justify-center">
-                                <i class="fas fa-map-marked-alt text-white text-lg"></i>
+                            <img src="https://placehold.co/40x40/f59e0b/FFFFFF?text=AU" alt="Admin" class="w-10 h-10 rounded-full">
+                            <div class="ml-3">
+                                <p class="text-sm font-semibold">Admin User</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400" id="userEmail">admin@urbanquest.com</p>
                             </div>
-                            <h1 class="text-2xl font-bold text-gray-900">UrbanQuest Admin</h1>
-                        </div>
-                        <div class="flex items-center space-x-4">
-                            <div class="flex items-center">
-                                <i class="fas fa-user-circle text-gray-400 mr-2"></i>
-                                <span id="userEmail" class="text-gray-700 font-medium"></span>
-                            </div>
-                            <button id="logoutBtn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
-                                <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                            </button>
                         </div>
                     </div>
                 </div>
-            </header>
-
-            <!-- Navigation -->
-            <nav class="bg-gray-800 border-b border-gray-700">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="flex space-x-0 overflow-x-auto">
-                        <button class="tab-button active flex items-center px-4 py-3 text-sm font-medium whitespace-nowrap" 
-                                onclick="showTab('overview')">
-                            <i class="fas fa-chart-line mr-2"></i>Overview
+            </aside>
+            
+            <!-- Main Content -->
+            <div class="flex-1 flex flex-col overflow-hidden">
+                <!-- Header -->
+                <header class="h-16 bg-white dark:bg-gray-800 shadow-sm flex items-center justify-between px-6 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center">
+                        <h2 id="pageTitle" class="text-xl font-semibold text-gray-800 dark:text-gray-200">Dashboard</h2>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <button onclick="toggleDarkMode()" class="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            <i id="darkModeIcon" class="fas fa-moon text-lg"></i>
                         </button>
-                        <button class="tab-button flex items-center px-4 py-3 text-sm font-medium whitespace-nowrap" 
-                                onclick="showTab('quests')">
-                            <i class="fas fa-map-signs mr-2"></i>Quests
-                        </button>
-                        <button class="tab-button flex items-center px-4 py-3 text-sm font-medium whitespace-nowrap" 
-                                onclick="showTab('quest-stops')">
-                            <i class="fas fa-map-marker-alt mr-2"></i>Quest Stops
-                        </button>
-                        <button class="tab-button flex items-center px-4 py-3 text-sm font-medium whitespace-nowrap" 
-                                onclick="showTab('cities')">
-                            <i class="fas fa-city mr-2"></i>Cities
-                        </button>
-                        <button class="tab-button flex items-center px-4 py-3 text-sm font-medium whitespace-nowrap" 
-                                onclick="showTab('categories')">
-                            <i class="fas fa-tags mr-2"></i>Categories
-                        </button>
-                        <button class="tab-button flex items-center px-4 py-3 text-sm font-medium whitespace-nowrap" 
-                                onclick="showTab('users')">
-                            <i class="fas fa-users mr-2"></i>Users
-                        </button>
-                        <button class="tab-button flex items-center px-4 py-3 text-sm font-medium whitespace-nowrap" 
-                                onclick="showTab('analytics')">
-                            <i class="fas fa-chart-pie mr-2"></i>Analytics
+                        <button id="logoutBtn" class="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                            <i class="fas fa-sign-out-alt text-lg"></i>
                         </button>
                     </div>
-                </div>
-            </nav>
-
-            <!-- Content -->
-            <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                <!-- Overview Tab -->
-                <div id="overview" class="tab-content active">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                            <div class="flex items-center">
-                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                                    <i class="fas fa-map-signs text-blue-600 text-xl"></i>
+                </header>
+                
+                <!-- Content Area -->
+                <main class="flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-900 p-6">
+                    <!-- Overview Tab -->
+                    <div id="overview" class="tab-content animate-fade-in">
+                        <div class="mb-6">
+                            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
+                            <p class="text-gray-600 dark:text-gray-400 mt-2">Welcome to your Urban Quest admin panel</p>
+                        </div>
+                        
+                        <!-- Stats Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">Total Profiles</p>
+                                        <p id="totalUsers" class="text-3xl font-bold text-gray-900 dark:text-gray-100">-</p>
+                                    </div>
+                                    <div class="bg-orange-100 dark:bg-orange-900/50 p-3 rounded-full">
+                                        <i class="fas fa-users text-orange-500 text-xl"></i>
+                                    </div>
                                 </div>
-                                <div class="ml-4">
-                                    <h3 class="text-sm font-medium text-gray-600">Total Quests</h3>
-                                    <p id="totalQuests" class="text-2xl font-bold text-gray-900">-</p>
+                            </div>
+                            
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">Total Quests</p>
+                                        <p id="totalQuests" class="text-3xl font-bold text-gray-900 dark:text-gray-100">-</p>
+                                    </div>
+                                    <div class="bg-orange-100 dark:bg-orange-900/50 p-3 rounded-full">
+                                        <i class="fas fa-map text-orange-500 text-xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">Total Cities</p>
+                                        <p id="totalCities" class="text-3xl font-bold text-gray-900 dark:text-gray-100">-</p>
+                                    </div>
+                                    <div class="bg-orange-100 dark:bg-orange-900/50 p-3 rounded-full">
+                                        <i class="fas fa-city text-orange-500 text-xl"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">Completions</p>
+                                        <p id="totalCompletions" class="text-3xl font-bold text-gray-900 dark:text-gray-100">-</p>
+                                    </div>
+                                    <div class="bg-orange-100 dark:bg-orange-900/50 p-3 rounded-full">
+                                        <i class="fas fa-trophy text-orange-500 text-xl"></i>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                            <div class="flex items-center">
-                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                                    <i class="fas fa-users text-green-600 text-xl"></i>
-                                </div>
-                                <div class="ml-4">
-                                    <h3 class="text-sm font-medium text-gray-600">Active Users</h3>
-                                    <p id="totalUsers" class="text-2xl font-bold text-gray-900">-</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                            <div class="flex items-center">
-                                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                                    <i class="fas fa-city text-purple-600 text-xl"></i>
-                                </div>
-                                <div class="ml-4">
-                                    <h3 class="text-sm font-medium text-gray-600">Cities</h3>
-                                    <p id="totalCities" class="text-2xl font-bold text-gray-900">-</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                            <div class="flex items-center">
-                                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                                    <i class="fas fa-trophy text-orange-600 text-xl"></i>
-                                </div>
-                                <div class="ml-4">
-                                    <h3 class="text-sm font-medium text-gray-600">Completions</h3>
-                                    <p id="totalCompletions" class="text-2xl font-bold text-gray-900">-</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        
                         <!-- Recent Activity -->
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                            <div class="px-6 py-4 border-b border-gray-200">
-                                <h3 class="text-lg font-semibold text-gray-900">
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+                            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
                                     <i class="fas fa-clock mr-2 text-gray-500"></i>Recent Activity
                                 </h3>
                             </div>
@@ -208,213 +257,172 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Quick Stats -->
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                            <div class="px-6 py-4 border-b border-gray-200">
-                                <h3 class="text-lg font-semibold text-gray-900">
-                                    <i class="fas fa-chart-bar mr-2 text-gray-500"></i>Challenge Types Usage
-                                </h3>
+                    <!-- Users Tab -->
+                    <div id="users" class="tab-content hidden animate-fade-in">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Profile Management</h1>
+                                <p class="text-gray-600 dark:text-gray-400 mt-2">Manage user profiles and permissions</p>
                             </div>
-                            <div class="p-6">
-                                <div id="challengeStats" class="space-y-3">
-                                    <div class="flex items-center text-gray-500">
-                                        <i class="fas fa-spinner fa-spin mr-2"></i>Loading challenge statistics...
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quests Tab -->
-                <div id="quests" class="tab-content">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900">
-                            <i class="fas fa-map-signs mr-2 text-blue-600"></i>Quest Management
-                        </h2>
-                        <button id="addQuestBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
-                            <i class="fas fa-plus mr-2"></i>Add New Quest
-                        </button>
-                    </div>
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                        <div class="p-6">
-                            <div id="questsList" class="space-y-4">
-                                <div class="flex items-center text-gray-500">
-                                    <i class="fas fa-spinner fa-spin mr-2"></i>Loading quests...
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quest Stops Tab -->
-                <div id="quest-stops" class="tab-content">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900">
-                            <i class="fas fa-map-marker-alt mr-2 text-green-600"></i>Quest Stops Management
-                        </h2>
-                        <button id="addQuestStopBtn" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
-                            <i class="fas fa-plus mr-2"></i>Add New Stop
-                        </button>
-                    </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Map Column -->
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                            <div class="px-6 py-4 border-b border-gray-200">
-                                <h3 class="text-lg font-semibold text-gray-900">
-                                    <i class="fas fa-map mr-2 text-blue-600"></i>Interactive Map
-                                </h3>
-                                <p class="text-sm text-gray-600 mt-1">Click on the map to select a location for a new quest stop</p>
-                            </div>
-                            <div class="p-6">
-                                <div id="map" class="h-96 w-full border border-gray-300 rounded-lg"></div>
-                                <div class="mt-4 text-sm text-gray-600 space-y-1">
-                                    <p><i class="fas fa-info-circle mr-2 text-blue-500"></i>Click on the map to select a location</p>
-                                    <p><i class="fas fa-map-pin mr-2 text-red-500"></i>Red markers are existing quest stops</p>
-                                    <p><i class="fas fa-map-pin mr-2 text-green-500"></i>Green marker is your selected location</p>
-                                </div>
-                            </div>
+                            <button onclick="addNewUser()" class="bg-orange-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-orange-600 transition-colors">
+                                <i class="fas fa-plus"></i>
+                                Add User
+                            </button>
                         </div>
                         
-                        <!-- Quest Stops List -->
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                            <div class="px-6 py-4 border-b border-gray-200">
-                                <h3 class="text-lg font-semibold text-gray-900">
-                                    <i class="fas fa-list mr-2 text-green-600"></i>Existing Quest Stops
-                                </h3>
+                        <!-- Search -->
+                        <div class="mb-6 relative">
+                            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" placeholder="Search by name or email..." 
+                                   class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        
+                        <!-- Users Table -->
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+                            <div id="usersTableContainer">
+                                <div class="flex items-center justify-center py-8">
+                                    <i class="fas fa-spinner fa-spin mr-2 text-gray-500"></i>
+                                    <span class="text-gray-500">Loading users...</span>
+                                </div>
                             </div>
-                            <div class="p-6">
-                                <div id="questStopsList" class="space-y-3 max-h-96 overflow-y-auto">
-                                    <div class="flex items-center text-gray-500">
-                                        <i class="fas fa-spinner fa-spin mr-2"></i>Loading quest stops...
+                        </div>
+                    </div>
+
+                    <!-- Cities Tab -->
+                    <div id="cities" class="tab-content hidden animate-fade-in">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">City Management</h1>
+                                <p class="text-gray-600 dark:text-gray-400 mt-2">Manage cities and locations</p>
+                            </div>
+                            <button onclick="addNewCity()" class="bg-orange-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-orange-600 transition-colors">
+                                <i class="fas fa-plus"></i>
+                                Add City
+                            </button>
+                        </div>
+                        
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+                            <div id="citiesTableContainer">
+                                <div class="flex items-center justify-center py-8">
+                                    <i class="fas fa-spinner fa-spin mr-2 text-gray-500"></i>
+                                    <span class="text-gray-500">Loading cities...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quests Tab -->
+                    <div id="quests" class="tab-content hidden animate-fade-in">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Quest Management</h1>
+                                <p class="text-gray-600 dark:text-gray-400 mt-2">Create and manage quests</p>
+                            </div>
+                            <button onclick="addNewQuest()" class="bg-orange-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-orange-600 transition-colors">
+                                <i class="fas fa-plus"></i>
+                                Add Quest
+                            </button>
+                        </div>
+                        
+                        <div id="questsContainer">
+                            <div class="flex items-center justify-center py-8">
+                                <i class="fas fa-spinner fa-spin mr-2 text-gray-500"></i>
+                                <span class="text-gray-500">Loading quests...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quest Stops Tab -->
+                    <div id="quest-stops" class="tab-content hidden animate-fade-in">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Quest Stops Management</h1>
+                                <p class="text-gray-600 dark:text-gray-400 mt-2">Manage quest stops and challenges</p>
+                            </div>
+                            <button onclick="addNewQuestStop()" class="bg-orange-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-orange-600 transition-colors">
+                                <i class="fas fa-plus"></i>
+                                Add Quest Stop
+                            </button>
+                        </div>
+                        
+                        <div id="questStopsContainer">
+                            <div class="flex items-center justify-center py-8">
+                                <i class="fas fa-spinner fa-spin mr-2 text-gray-500"></i>
+                                <span class="text-gray-500">Loading quest stops...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Categories Tab -->
+                    <div id="categories" class="tab-content hidden animate-fade-in">
+                        <div class="flex justify-between items-center mb-6">
+                            <div>
+                                <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Categories Management</h1>
+                                <p class="text-gray-600 dark:text-gray-400 mt-2">Organize quests by categories</p>
+                            </div>
+                            <button onclick="addNewCategory()" class="bg-orange-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-orange-600 transition-colors">
+                                <i class="fas fa-plus"></i>
+                                Add Category
+                            </button>
+                        </div>
+                        
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+                            <div id="categoriesTableContainer">
+                                <div class="flex items-center justify-center py-8">
+                                    <i class="fas fa-spinner fa-spin mr-2 text-gray-500"></i>
+                                    <span class="text-gray-500">Loading categories...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analytics Tab -->
+                    <div id="analytics" class="tab-content hidden animate-fade-in">
+                        <div class="mb-6">
+                            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">Analytics & Reports</h1>
+                            <p class="text-gray-600 dark:text-gray-400 mt-2">Track performance and user engagement</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+                                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Quest Performance</h3>
+                                </div>
+                                <div class="p-6">
+                                    <div id="questPerformance">
+                                        <div class="flex items-center text-gray-500">
+                                            <i class="fas fa-spinner fa-spin mr-2"></i>Loading analytics...
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+                                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">User Engagement</h3>
+                                </div>
+                                <div class="p-6">
+                                    <div id="userEngagement">
+                                        <div class="flex items-center text-gray-500">
+                                            <i class="fas fa-spinner fa-spin mr-2"></i>Loading analytics...
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Cities Tab -->
-                <div id="cities" class="tab-content">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900">
-                            <i class="fas fa-city mr-2 text-purple-600"></i>Cities Management
-                        </h2>
-                        <button id="addCityBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
-                            <i class="fas fa-plus mr-2"></i>Add New City
-                        </button>
-                    </div>
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                        <div class="p-6">
-                            <div id="citiesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <div class="flex items-center text-gray-500">
-                                    <i class="fas fa-spinner fa-spin mr-2"></i>Loading cities...
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Categories Tab -->
-                <div id="categories" class="tab-content">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900">
-                            <i class="fas fa-tags mr-2 text-orange-600"></i>Quest Categories
-                        </h2>
-                        <button id="addCategoryBtn" class="bg-orange-600 hover:bg-orange-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
-                            <i class="fas fa-plus mr-2"></i>Add New Category
-                        </button>
-                    </div>
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                        <div class="p-6">
-                            <div id="categoriesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <div class="flex items-center text-gray-500">
-                                    <i class="fas fa-spinner fa-spin mr-2"></i>Loading categories...
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Users Tab -->
-                <div id="users" class="tab-content">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900">
-                            <i class="fas fa-users mr-2 text-indigo-600"></i>Users Management
-                        </h2>
-                    </div>
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                        <div class="p-6">
-                            <div id="usersList" class="space-y-4">
-                                <div class="flex items-center text-gray-500">
-                                    <i class="fas fa-spinner fa-spin mr-2"></i>Loading users...
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Analytics Tab -->
-                <div id="analytics" class="tab-content">
-                    <div class="mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900">
-                            <i class="fas fa-chart-pie mr-2 text-pink-600"></i>Analytics & Reports
-                        </h2>
-                    </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                            <div class="px-6 py-4 border-b border-gray-200">
-                                <h3 class="text-lg font-semibold text-gray-900">Quest Performance</h3>
-                            </div>
-                            <div class="p-6">
-                                <div id="questPerformance">
-                                    <div class="flex items-center text-gray-500">
-                                        <i class="fas fa-spinner fa-spin mr-2"></i>Loading analytics...
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                            <div class="px-6 py-4 border-b border-gray-200">
-                                <h3 class="text-lg font-semibold text-gray-900">User Engagement</h3>
-                            </div>
-                            <div class="p-6">
-                                <div id="userEngagement">
-                                    <div class="flex items-center text-gray-500">
-                                        <i class="fas fa-spinner fa-spin mr-2"></i>Loading analytics...
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </main>
-        </div>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white p-8 rounded-xl shadow-2xl">
-            <div class="flex items-center space-x-4">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <p class="text-gray-700 font-medium">Loading...</p>
+                </main>
             </div>
         </div>
     </div>
 
-    <!-- Toast Notifications -->
-    <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
-
-    <!-- Include Modals -->
-    <div id="modalsContainer"></div>
-
+    <!-- Scripts -->
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
-    <script src="js/ui-components.js"></script>
     <script src="js/modal-manager.js"></script>
     <script src="js/modals.js"></script>
-    <script src="js/cities-helper.js"></script>
     <script src="js/quest-stops.js"></script>
     <script src="js/quests.js"></script>
     <script src="js/cities.js"></script>
