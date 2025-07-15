@@ -26,6 +26,9 @@ class QuestStop extends Equatable {
   final String? infoText;
   final String? historicalContext;
   final List<String>? funFacts;
+  final List<String>? helpSteps;
+  final List<String>? helpTips;
+  final List<Map<String, String>>? helpExamples;
   final double latitude;
   final double longitude;
   final int radius;
@@ -54,6 +57,9 @@ class QuestStop extends Equatable {
     this.infoText,
     this.historicalContext,
     this.funFacts,
+    this.helpSteps,
+    this.helpTips,
+    this.helpExamples,
     required this.latitude,
     required this.longitude,
     this.radius = 50,
@@ -86,6 +92,13 @@ class QuestStop extends Equatable {
       infoText: json['info_text'] as String?,
       historicalContext: json['historical_context'] as String?,
       funFacts: json['fun_facts'] != null ? List<String>.from(json['fun_facts']) : null,
+      helpSteps: json['help_steps'] != null ? List<String>.from(json['help_steps']) : null,
+      helpTips: json['help_tips'] != null ? List<String>.from(json['help_tips']) : null,
+      helpExamples: json['help_examples'] != null 
+          ? List<Map<String, String>>.from(
+              json['help_examples'].map((x) => Map<String, String>.from(x))
+            )
+          : null,
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
       radius: json['radius'] as int? ?? 50,
@@ -119,6 +132,9 @@ class QuestStop extends Equatable {
         infoText,
         historicalContext,
         funFacts,
+        helpSteps,
+        helpTips,
+        helpExamples,
         latitude,
         longitude,
         radius,

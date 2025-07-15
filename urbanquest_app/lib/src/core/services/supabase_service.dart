@@ -233,6 +233,15 @@ class SupabaseService {
     );
   }
 
+  Future<List<Map<String, dynamic>>> getQuestTutorials(String questId) async {
+    return await fetchFromTable(
+      'quest_tutorials',
+      select: '*',
+      eq: {'quest_id': questId, 'is_active': true},
+      order: 'order_index',
+    );
+  }
+
   // City operations
   Future<List<Map<String, dynamic>>> getCities() async {
     return await fetchFromTable(
@@ -495,7 +504,7 @@ class SupabaseService {
       print('Storage error uploading photo: ${storageError.message}');
       
       // If it's an RLS policy violation, try a fallback approach
-      if (storageError.statusCode == 403 || storageError.message.contains('row-level security')) {
+      if ((storageError.statusCode?.toString() == '403') || storageError.message.contains('row-level security')) {
         print('RLS policy violation detected. Storage bucket may need proper policies configured.');
         
         // For now, return a placeholder URL to prevent app crashes
