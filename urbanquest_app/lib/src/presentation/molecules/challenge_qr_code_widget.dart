@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../atoms/custom_button.dart';
 import '../atoms/custom_card.dart';
@@ -23,8 +23,7 @@ class ChallengeQrCodeWidget extends StatefulWidget {
 }
 
 class _ChallengeQrCodeWidgetState extends State<ChallengeQrCodeWidget> {
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  QRViewController? controller;
+  MobileScannerController? controller;
   bool _isScanning = false;
   bool _hasPermission = false;
   String? _scannedCode;
@@ -55,18 +54,19 @@ class _ChallengeQrCodeWidgetState extends State<ChallengeQrCodeWidget> {
     }
   }
 
-  void _onQRViewCreated(QRViewController controller) {
-    this.controller = controller;
-    controller.scannedDataStream.listen((scanData) {
-      if (scanData.code != null && !widget.isSubmitting) {
+  void _onDetect(BarcodeCapture capture) {
+    final List<Barcode> barcodes = capture.barcodes;
+    if (barcodes.isNotEmpty && !widget.isSubmitting) {
+      final code = barcodes.first.rawValue;
+      if (code != null) {
         setState(() {
-          _scannedCode = scanData.code;
+          _scannedCode = code;
           _isScanning = false;
         });
-        controller.pauseCamera();
-        widget.onQrCodeScanned(scanData.code!);
+        controller?.stop();
+        widget.onQrCodeScanned(code);
       }
-    });
+    }
   }
 
   void _startScanning() {
@@ -74,14 +74,15 @@ class _ChallengeQrCodeWidgetState extends State<ChallengeQrCodeWidget> {
       _isScanning = true;
       _scannedCode = null;
     });
-    controller?.resumeCamera();
+    controller = MobileScannerController();
+    controller?.start();
   }
 
   void _stopScanning() {
     setState(() {
       _isScanning = false;
     });
-    controller?.pauseCamera();
+    controller?.stop();
   }
 
   @override
@@ -269,16 +270,9 @@ class _ChallengeQrCodeWidgetState extends State<ChallengeQrCodeWidget> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10),
-        child: QRView(
-          key: qrKey,
-          onQRViewCreated: _onQRViewCreated,
-          overlay: QrScannerOverlayShape(
-            borderColor: Colors.deepPurple,
-            borderRadius: 10,
-            borderLength: 30,
-            borderWidth: 10,
-            cutOutSize: 200,
-          ),
+        child: MobileScanner(
+          controller: controller,
+          onDetect: _onDetect,
         ),
       ),
     );
