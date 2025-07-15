@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:record/record.dart';
+import 'package:flutter_sound/flutter_sound.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -27,12 +27,13 @@ class ChallengeAudioWidget extends StatefulWidget {
 }
 
 class _ChallengeAudioWidgetState extends State<ChallengeAudioWidget> {
-  final AudioRecorder _recorder = AudioRecorder();
+  final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   final AudioPlayer _player = AudioPlayer();
   
   bool _isRecording = false;
   bool _isPlaying = false;
   bool _hasPermission = false;
+  bool _isRecorderInitialized = false;
   String? _audioPath;
   Duration _recordDuration = Duration.zero;
   Duration _playbackDuration = Duration.zero;
@@ -44,6 +45,7 @@ class _ChallengeAudioWidgetState extends State<ChallengeAudioWidget> {
   @override
   void initState() {
     super.initState();
+    _initializeRecorder();
     _checkMicrophonePermission();
     _setupAudioPlayer();
   }
@@ -52,9 +54,22 @@ class _ChallengeAudioWidgetState extends State<ChallengeAudioWidget> {
   void dispose() {
     _recordTimer?.cancel();
     _playerSubscription?.cancel();
-    _recorder.dispose();
+    if (_isRecorderInitialized) {
+      _recorder.closeRecorder();
+    }
     _player.dispose();
     super.dispose();
+  }
+
+  Future<void> _initializeRecorder() async {
+    try {
+      await _recorder.openRecorder();
+      setState(() {
+        _isRecorderInitialized = true;
+      });
+    } catch (e) {
+      print('Error initializing recorder: $e');
+    }
   }
 
   Future<void> _checkMicrophonePermission() async {
@@ -98,18 +113,21 @@ class _ChallengeAudioWidgetState extends State<ChallengeAudioWidget> {
       if (!_hasPermission) return;
     }
 
+    if (!_isRecorderInitialized) {
+      await _initializeRecorder();
+      if (!_isRecorderInitialized) return;
+    }
+
     try {
       final directory = await getApplicationDocumentsDirectory();
-      final fileName = 'quest_audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      final fileName = 'quest_audio_${DateTime.now().millisecondsSinceEpoch}.aac';
       final path = '${directory.path}/$fileName';
 
-      await _recorder.start(
-        const RecordConfig(
-          encoder: AudioEncoder.aacLc,
-          bitRate: 128000,
-          sampleRate: 44100,
-        ),
-        path: path,
+      await _recorder.startRecorder(
+        toFile: path,
+        codec: Codec.aacADTS,
+        bitRate: 128000,
+        sampleRate: 44100,
       );
 
       setState(() {
@@ -135,7 +153,7 @@ class _ChallengeAudioWidgetState extends State<ChallengeAudioWidget> {
 
   Future<void> _stopRecording() async {
     try {
-      await _recorder.stop();
+      await _recorder.stopRecorder();
       _recordTimer?.cancel();
       
       setState(() {

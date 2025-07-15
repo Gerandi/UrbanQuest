@@ -41,7 +41,7 @@ class QuestCategory extends Equatable {
       );
     } catch (e) {
       print('Error parsing QuestCategory from JSON: $e');
-      return QuestCategory(
+      return const QuestCategory(
         id: 'error',
         name: 'Error Loading Category',
       );

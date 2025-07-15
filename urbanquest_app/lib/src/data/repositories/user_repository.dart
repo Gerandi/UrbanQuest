@@ -48,12 +48,8 @@ class UserRepository {
         eq: {'user_id': userId, 'status': 'completed'},
       );
 
-      final completedQuests = (progressResponse)
-          .map((item) => item['quest_id'] as String)
-          .toList();
-
       // Get user level info
-      final level = await _getUserLevel(profileResponse.first['total_points'] ?? 0);
+      await _getUserLevel(profileResponse.first['total_points'] ?? 0);
 
       // Build user stats
       final statsData = profileResponse.first['user_stats'] ?? {};
@@ -71,10 +67,10 @@ class UserRepository {
         levelTitle: statsData['level_title'] ?? 'Explorer',
       );
 
-      // Extract achievements
-      final achievementsList = (profileResponse.first['user_achievements'] as List? ?? [])
-          .map((userAchievement) => userAchievement['achievements']['name'] as String)
-          .toList();
+      // Extract achievements (not currently used but preserved for future use)
+      // final achievementsList = (profileResponse.first['user_achievements'] as List? ?? [])
+      //     .map((userAchievement) => userAchievement['achievements']['name'] as String)
+      //     .toList();
 
       return User(
         id: userId,

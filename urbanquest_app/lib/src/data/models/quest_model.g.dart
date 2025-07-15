@@ -22,8 +22,8 @@ Quest _$QuestFromJson(Map<String, dynamic> json) => Quest(
       points: (json['points'] as num).toInt(),
       tags: (json['tags'] as List<dynamic>).map((e) => e as String).toList(),
       requirements: (json['requirements'] as List<dynamic>?)
-          ?.map((e) => QuestRequirement.fromJson(e as Map<String, dynamic>))
-          .toList() ??
+              ?.map((e) => QuestRequirement.fromJson(e as Map<String, dynamic>))
+              .toList() ??
           const [],
     );
 
@@ -42,5 +42,5 @@ Map<String, dynamic> _$QuestToJson(Quest instance) => <String, dynamic>{
       'category': instance.category,
       'points': instance.points,
       'tags': instance.tags,
-      'requirements': instance.requirements.map((e) => e.toJson()).toList(),
+      'requirements': instance.requirements,
     };

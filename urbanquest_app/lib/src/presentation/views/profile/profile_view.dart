@@ -572,7 +572,7 @@ class _ProfileViewState extends State<ProfileView> {
                 Expanded(
                   child: _buildStatItem(
                     icon: Icons.directions_walk,
-                    value: '${user.stats?.totalDistance?.toStringAsFixed(1) ?? 0.0} km',
+                    value: '${user.stats?.totalDistance.toStringAsFixed(1) ?? 0.0} km',
                     label: 'Walked',
                     color: Colors.green,
                 ),

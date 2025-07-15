@@ -54,7 +54,7 @@ class CustomButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(_getBorderRadius()),
             side: _getBorderSide(colorScheme),
           ),
-          minimumSize: Size(0, _getHeight()),
+          minimumSize: Size(_getMinimumWidth(), _getHeight()),
         ),
         child: isLoading
             ? SizedBox(
@@ -72,7 +72,7 @@ class CustomButton extends StatelessWidget {
                     Icon(icon, size: _getIconSize()),
                     SizedBox(width: _getIconSpacing()),
                   ],
-                  Expanded(
+                  Flexible(
                     child: Text(
                       text,
                       style: _getTextStyle(theme),
@@ -162,6 +162,16 @@ class CustomButton extends StatelessWidget {
       case ButtonSize.large:
         return 52;
     }
+  }
+
+  double _getMinimumWidth() {
+    // Calculate minimum width based on icon + spacing + some text space
+    double minWidth = _getPadding().horizontal;
+    if (icon != null) {
+      minWidth += _getIconSize() + _getIconSpacing();
+    }
+    minWidth += 40; // Minimum space for text
+    return minWidth;
   }
 
   double _getIconSize() {

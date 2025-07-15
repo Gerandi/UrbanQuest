@@ -34,7 +34,45 @@
       "Bash(flutter analyze:*)",
       "mcp__supabase__list_migrations",
       "Bash(flutter test:*)",
-      "Bash(/mnt/c/flutter/bin/flutter test)"
+      "Bash(/mnt/c/flutter/bin/flutter test)",
+      "Bash(ls:*)",
+      "Bash(/mnt/c/flutter/bin/flutter --version)",
+      "Bash(/mnt/c/flutter/bin/flutter.bat --version)",
+      "Bash(export:*)",
+      "Bash(dart:*)",
+      "Bash(wget:*)",
+      "Bash(sudo snap install:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(npm install:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(tdd-guard:*)",
+      "Bash(npm:*)",
+      "Bash(flutter pub:*)",
+      "Bash(rm:*)",
+      "Bash(flutter:*)",
+      "Bash(echo $ANDROID_HOME)",
+      "Bash(echo $JAVA_HOME)",
+      "Bash(mkdir:*)"
+    ],
+    "deny": []
+  },
+  "hooks": {
+    "preToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|TodoWrite",
+        "command": "tdd-guard"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|TodoWrite",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "tdd-guard"
+          }
+        ]
+      }
     ]
   },
   "mcpServers": {

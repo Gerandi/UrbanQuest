@@ -31,6 +31,15 @@ QuestStop _$QuestStopFromJson(Map<String, dynamic> json) => QuestStop(
       funFacts: (json['funFacts'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
+      helpSteps: (json['helpSteps'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      helpTips: (json['helpTips'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      helpExamples: (json['helpExamples'] as List<dynamic>?)
+          ?.map((e) => Map<String, String>.from(e as Map))
+          .toList(),
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
       radius: (json['radius'] as num?)?.toInt() ?? 50,
@@ -60,6 +69,9 @@ Map<String, dynamic> _$QuestStopToJson(QuestStop instance) => <String, dynamic>{
       'infoText': instance.infoText,
       'historicalContext': instance.historicalContext,
       'funFacts': instance.funFacts,
+      'helpSteps': instance.helpSteps,
+      'helpTips': instance.helpTips,
+      'helpExamples': instance.helpExamples,
       'latitude': instance.latitude,
       'longitude': instance.longitude,
       'radius': instance.radius,

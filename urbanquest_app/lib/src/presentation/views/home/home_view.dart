@@ -259,7 +259,7 @@ class _HomeViewState extends State<HomeView> {
       },
       {
         'label': 'Distance',
-        'value': '${currentUser!.stats?.totalDistance?.toStringAsFixed(1) ?? 0.0} km',
+        'value': '${currentUser!.stats?.totalDistance.toStringAsFixed(1) ?? 0.0} km',
         'icon': Icons.navigation,
         'color': AppColors.secondary,
       },

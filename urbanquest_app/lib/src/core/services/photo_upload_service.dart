@@ -34,7 +34,7 @@ class PhotoUploadService {
       final fileName = '${user.id}/$questId/${stopId}_${DateTime.now().millisecondsSinceEpoch}$extension';
 
       // Upload to Supabase Storage
-      final uploadPath = await _supabase.storage
+      await _supabase.storage
           .from('quest-photos')
           .uploadBinary(fileName, compressedBytes);
 

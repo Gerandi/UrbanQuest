@@ -53,7 +53,7 @@ class UserStatsCard extends StatelessWidget {
               _StatItem(
                 icon: Icons.directions_walk,
                 label: 'Distance',
-                value: stats.totalDistance,
+                value: '${stats.totalDistance.toStringAsFixed(1)} km',
                 color: Colors.orange,
               ),
               _StatItem(

@@ -305,14 +305,7 @@ class UserProfileRepository {
     }
   }
 
-  int _calculateLevel(int totalPoints) {
-    if (totalPoints < 100) return 1;
-    if (totalPoints < 500) return 2;
-    if (totalPoints < 1000) return 3;
-    if (totalPoints < 2500) return 4;
-    if (totalPoints < 5000) return 5;
-    return ((totalPoints - 5000) ~/ 2500) + 6;
-  }
+
 
   /// Delete user account and all associated data
   Future<bool> deleteUserAccount() async {

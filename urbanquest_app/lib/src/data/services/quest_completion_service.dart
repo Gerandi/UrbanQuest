@@ -1,4 +1,5 @@
 import 'dart:math';
+
 import '../models/quest_stop_model.dart';
 import '../models/achievement_model.dart';
 import '../repositories/quest_repository.dart';
@@ -33,7 +34,7 @@ class QuestCompletionService {
       int bonusPoints = 0;
       
       // Time bonus - faster completion gets bonus
-      final estimatedMinutes = int.tryParse(quest.estimatedDuration ?? '60') ?? 60;
+      final estimatedMinutes = int.tryParse(quest.estimatedDuration) ?? 60;
       if (duration.inMinutes <= estimatedMinutes) {
         bonusPoints += 50; // Fast completion bonus
       }
