@@ -85,7 +85,7 @@ function createQuestCard(quest) {
                         </span>
                         <span>
                             <i class="fas fa-clock mr-1"></i>
-                            ${quest.estimated_duration || 0} min
+                            ${quest.estimated_duration_minutes || 0} min
                         </span>
                         <span>
                             <i class="fas fa-star mr-1"></i>
@@ -166,7 +166,7 @@ function showQuestModal(quest = null) {
                     { value: 'hard', label: 'Hard' },
                     { value: 'expert', label: 'Expert' }
                 ], true, quest?.difficulty || '')}
-                ${UIComponents.createInput('estimatedDuration', 'Estimated Duration (minutes)', 'number', true, '60', quest?.estimated_duration || '60')}
+                ${UIComponents.createInput('estimatedDuration', 'Estimated Duration (minutes)', 'number', true, '60', quest?.estimated_duration_minutes || '60')}
                 ${UIComponents.createInput('maxPlayers', 'Max Players', 'number', false, '4', quest?.max_players || '4')}
                 ${UIComponents.createInput('minAge', 'Minimum Age', 'number', false, '13', quest?.min_age || '13')}
                 ${UIComponents.createTextarea('requirements', 'Requirements', false, 'Any special requirements or equipment needed', quest?.requirements || '')}
@@ -218,7 +218,7 @@ async function handleQuestSubmit(existingQuest = null) {
             city_id: formData.get('cityId'),
             category_id: formData.get('categoryId'),
             difficulty: formData.get('difficulty'),
-            estimated_duration: parseInt(formData.get('estimatedDuration')),
+            estimated_duration_minutes: parseInt(formData.get('estimatedDuration')),
             max_players: parseInt(formData.get('maxPlayers')) || null,
             min_age: parseInt(formData.get('minAge')) || null,
             requirements: formData.get('requirements') || null,
@@ -375,7 +375,7 @@ async function previewQuest(questId) {
                         <div><strong>City:</strong> ${quest.cities?.name || 'Unknown'}</div>
                         <div><strong>Category:</strong> ${quest.quest_categories?.name || 'None'}</div>
                         <div><strong>Difficulty:</strong> ${Utils.capitalizeFirst(quest.difficulty)}</div>
-                        <div><strong>Duration:</strong> ${quest.estimated_duration} min</div>
+                        <div><strong>Duration:</strong> ${quest.estimated_duration_minutes} min</div>
                         <div><strong>Total Points:</strong> ${totalPoints}</div>
                         <div><strong>Stops:</strong> ${stops.length}</div>
                     </div>

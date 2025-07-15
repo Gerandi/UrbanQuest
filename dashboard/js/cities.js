@@ -358,7 +358,7 @@ async function viewCityQuests(cityId) {
                                                 </span>
                                                 <span>
                                                     <i class="fas fa-clock mr-1"></i>
-                                                    ${quest.estimated_duration || 0} min
+                                                    ${quest.estimated_duration_minutes || 0} min
                                                 </span>
                                                 <span>
                                                     <i class="fas fa-signal mr-1"></i>
