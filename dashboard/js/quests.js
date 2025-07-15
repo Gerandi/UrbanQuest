@@ -1,557 +1,374 @@
-// Quests Management
+// Quest Management Module
+const QuestManager = {
+    currentQuests: [],
+    
+    async init() {
+        await this.loadQuests();
+        await this.loadCategoriesForModal();
+        await this.loadCitiesForModal();
+        this.setupEventListeners();
+    },
 
-// Load quests data for the main view
-async function loadQuestsData() {
-    try {
-        Utils.showElementLoading('questsList');
-        
-        const { data: quests, error } = await supabaseClient
-            .from('quests')
-            .select(`
-                *,
-                cities(name, id),
-                quest_categories(name, id),
-                quest_stops(id, title, challenge_type, points)
-            `)
-            .order('created_at', { ascending: false });
-            
-        if (error) throw error;
-        
+    setupEventListeners() {
+        const questForm = document.getElementById('questForm');
+        if (questForm) {
+            questForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(questForm);
+                const questData = Object.fromEntries(formData);
+                await this.saveQuest(questData);
+            });
+        }
+    },
+
+    async loadQuests() {
+        try {
+            const { data: quests, error } = await supabase
+                .from('quests')
+                .select(`
+                    *,
+                    quest_categories(name),
+                    cities(name),
+                    quest_stops(count)
+                `);
+
+            if (error) throw error;
+
+            this.currentQuests = quests || [];
+            this.displayQuests();
+        } catch (error) {
+            console.error('Error loading quests:', error);
+            Utils.showNotification('Error loading quests: ' + error.message, 'error');
+        }
+    },
+
+    displayQuests() {
         const questsList = document.getElementById('questsList');
         if (!questsList) return;
-        
-        if (quests && quests.length > 0) {
-            questsList.innerHTML = quests.map(quest => createQuestCard(quest)).join('');
-        } else {
-            questsList.innerHTML = UIComponents.createEmptyState(
-                'No Quests Found',
-                'Start by creating your first quest to guide players through the city.',
-                'Add Quest',
-                'showQuestModal()',
-                'fas fa-map'
-            );
-        }
-        
-    } catch (error) {
-        Utils.handleError(error, 'Failed to load quests');
-        const questsList = document.getElementById('questsList');
-        if (questsList) {
-            questsList.innerHTML = `
-                <div class="text-center py-8">
-                    <i class="fas fa-exclamation-triangle text-red-500 text-3xl mb-4"></i>
-                    <p class="text-red-600">Failed to load quests</p>
-                </div>
-            `;
-        }
-    }
-}
 
-// Create a quest card component
-function createQuestCard(quest) {
-    const stops = quest.quest_stops || [];
-    const totalPoints = stops.reduce((sum, stop) => sum + (stop.points || 0), 0);
-    const challengeTypes = [...new Set(stops.map(stop => stop.challenge_type))];
-    
-    const statusBadge = quest.is_active 
-        ? UIComponents.createBadge('Active', 'green')
-        : UIComponents.createBadge('Inactive', 'gray');
-    
-    const difficultyBadge = UIComponents.createBadge(
-        Utils.capitalizeFirst(quest.difficulty), 
-        quest.difficulty === 'easy' ? 'green' : 
-        quest.difficulty === 'medium' ? 'yellow' : 'red'
-    );
-    
-    return `
-        <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-            <div class="flex justify-between items-start mb-4">
-                <div class="flex-1">
-                    <div class="flex items-center mb-2">
-                        <h3 class="text-lg font-semibold text-gray-900 mr-3">${quest.title}</h3>
-                        ${statusBadge}
-                        ${difficultyBadge}
-                    </div>
-                    
-                    <p class="text-gray-600 mb-3">${Utils.truncateText(quest.description, 120)}</p>
-                    
-                    <div class="flex items-center space-x-4 text-sm text-gray-500">
-                        <span>
-                            <i class="fas fa-map-marker-alt mr-1"></i>
-                            ${quest.cities?.name || 'Unknown City'}
-                        </span>
-                        <span>
-                            <i class="fas fa-tag mr-1"></i>
-                            ${quest.quest_categories?.name || 'No Category'}
-                        </span>
-                        <span>
-                            <i class="fas fa-clock mr-1"></i>
-                            ${quest.estimated_duration_minutes || 0} min
-                        </span>
-                        <span>
-                            <i class="fas fa-star mr-1"></i>
-                            ${totalPoints} points
-                        </span>
-                    </div>
-                </div>
-                
-                <div class="flex space-x-2 ml-4">
-                    <button onclick="editQuest('${quest.id}')" 
-                            class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-3 rounded transition duration-200">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button onclick="duplicateQuest('${quest.id}')" 
-                            class="bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2 px-3 rounded transition duration-200">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                    <button onclick="deleteQuest('${quest.id}')" 
-                            class="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold py-2 px-3 rounded transition duration-200">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
-            
-            <div class="border-t border-gray-200 pt-4">
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center space-x-3">
-                        <span class="text-sm text-gray-600">
-                            <i class="fas fa-map-signs mr-1"></i>
-                            ${stops.length} stops
-                        </span>
-                        ${challengeTypes.length > 0 ? `
-                            <div class="flex space-x-1">
-                                ${challengeTypes.slice(0, 3).map(type => {
-                                    const config = CONFIG.CHALLENGE_TYPES[type] || CONFIG.CHALLENGE_TYPES.text;
-                                    return `<i class="${config.icon} text-${config.color}-600" title="${config.name}"></i>`;
-                                }).join('')}
-                                ${challengeTypes.length > 3 ? `<span class="text-xs text-gray-500">+${challengeTypes.length - 3}</span>` : ''}
-                            </div>
-                        ` : ''}
-                    </div>
-                    
-                    <div class="flex space-x-2">
-                        <button onclick="previewQuest('${quest.id}')" 
-                                class="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                            <i class="fas fa-eye mr-1"></i>Preview
-                        </button>
-                        <button onclick="exportQuest('${quest.id}')" 
-                                class="text-green-600 hover:text-green-800 text-sm font-medium">
-                            <i class="fas fa-download mr-1"></i>Export
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-// Show quest modal for create/edit
-function showQuestModal(quest = null) {
-    const isEdit = !!quest;
-    const title = isEdit ? 'Edit Quest' : 'Create New Quest';
-    
-    // Load cities and categories for dropdowns
-    Promise.all([
-        loadCitiesForDropdown(),
-        loadCategoriesForDropdown()
-    ]).then(([cities, categories]) => {
-        const content = `
-            <form id="questForm" class="space-y-4">
-                ${UIComponents.createInput('title', 'Quest Title', 'text', true, 'Enter quest title', quest?.title || '')}
-                ${UIComponents.createTextarea('description', 'Description', true, 'Enter quest description', quest?.description || '', 4)}
-                ${UIComponents.createSelect('cityId', 'City', cities, true, quest?.city_id || '')}
-                ${UIComponents.createSelect('categoryId', 'Category', categories, true, quest?.category_id || '')}
-                ${UIComponents.createSelect('difficulty', 'Difficulty', [
-                    { value: 'easy', label: 'Easy' },
-                    { value: 'medium', label: 'Medium' },
-                    { value: 'hard', label: 'Hard' },
-                    { value: 'expert', label: 'Expert' }
-                ], true, quest?.difficulty || '')}
-                ${UIComponents.createInput('estimatedDuration', 'Estimated Duration (minutes)', 'number', true, '60', quest?.estimated_duration_minutes || '60')}
-                ${UIComponents.createInput('maxPlayers', 'Max Players', 'number', false, '4', quest?.max_players || '4')}
-                ${UIComponents.createInput('minAge', 'Minimum Age', 'number', false, '13', quest?.min_age || '13')}
-                ${UIComponents.createTextarea('requirements', 'Requirements', false, 'Any special requirements or equipment needed', quest?.requirements || '')}
-                ${UIComponents.createTextarea('rewards', 'Rewards Description', false, 'Describe what players earn upon completion', quest?.rewards || '')}
-                ${UIComponents.createCheckbox('isActive', 'Quest is Active', quest?.is_active || false, '1')}
-                ${UIComponents.createCheckbox('isPublic', 'Quest is Public', quest?.is_public !== false, '1')}
-                
-                <div class="flex justify-end space-x-4 pt-4">
-                    <button type="button" onclick="ModalManager.close('questModal')" 
-                            class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg">
-                        Cancel
-                    </button>
-                    <button type="submit" 
-                            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg">
-                        ${isEdit ? 'Update' : 'Create'} Quest
-                    </button>
-                </div>
-            </form>
-        `;
-
-        // Ensure ModalManager is available
-        if (typeof window.ModalManager === 'undefined' || !window.ModalManager.create) {
-            console.error('ModalManager not available');
-            Utils.showToast('Error: Modal system not initialized', 'error');
+        if (this.currentQuests.length === 0) {
+            questsList.innerHTML = '<div class="text-center py-8 text-gray-500">No quests found</div>';
             return;
         }
-        
-        window.ModalManager.create('questModal', title, content, 'lg');
-        window.ModalManager.show('questModal');
 
-        // Set up form handler
-        setupQuestForm(quest);
-    });
-}
+        questsList.innerHTML = this.currentQuests.map(quest => this.createQuestCard(quest)).join('');
+    },
 
-function setupQuestForm(quest = null) {
-    const form = document.getElementById('questForm');
-    
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        await handleQuestSubmit(quest);
-    });
-}
+    createQuestCard(quest) {
+        const categoryName = quest.quest_categories?.name || 'Uncategorized';
+        const cityName = quest.cities?.name || 'No City';
+        const stopCount = quest.quest_stops?.length || 0;
 
-async function handleQuestSubmit(existingQuest = null) {
-    const form = document.getElementById('questForm');
-    const formData = new FormData(form);
-    
-    try {
-        showLoading(true);
-
-        // Build quest data
-        const questData = {
-            title: formData.get('title'),
-            description: formData.get('description'),
-            city_id: formData.get('cityId'),
-            category_id: formData.get('categoryId'),
-            difficulty: formData.get('difficulty'),
-            estimated_duration_minutes: parseInt(formData.get('estimatedDuration')),
-            max_players: parseInt(formData.get('maxPlayers')) || null,
-            min_age: parseInt(formData.get('minAge')) || null,
-            requirements: formData.get('requirements') || null,
-            rewards: formData.get('rewards') || null,
-            is_active: formData.get('isActive') === '1',
-            is_public: formData.get('isPublic') === '1'
-        };
-
-        // Add ID for new quests
-        if (!existingQuest) {
-            questData.id = Utils.generateId('quest');
-        }
-
-        // Save to database
-        let result;
-        if (existingQuest) {
-            result = await supabaseClient
-                .from('quests')
-                .update(questData)
-                .eq('id', existingQuest.id);
-        } else {
-            result = await supabaseClient
-                .from('quests')
-                .insert([questData]);
-        }
-
-        if (result.error) throw result.error;
-
-        Utils.showToast(
-            `Quest ${existingQuest ? 'updated' : 'created'} successfully!`, 
-            'success'
-        );
-        
-        ModalManager.close('questModal');
-        await loadQuestsData();
-
-    } catch (error) {
-        Utils.handleError(error, 'Failed to save quest');
-    } finally {
-        showLoading(false);
-    }
-}
-
-// Edit quest
-async function editQuest(questId) {
-    try {
-        const { data: quest, error } = await supabaseClient
-            .from('quests')
-            .select('*')
-            .eq('id', questId)
-            .single();
-            
-        if (error) throw error;
-        
-        showQuestModal(quest);
-        
-    } catch (error) {
-        Utils.handleError(error, 'Failed to load quest for editing');
-    }
-}
-
-// Duplicate quest
-async function duplicateQuest(questId) {
-    try {
-        showLoading(true);
-        
-        const { data: quest, error } = await supabaseClient
-            .from('quests')
-            .select('*')
-            .eq('id', questId)
-            .single();
-            
-        if (error) throw error;
-        
-        // Create a copy with new ID and modified title
-        const duplicatedQuest = {
-            id: Utils.generateId('quest'),
-            title: `${quest.title} (Copy)`,
-            description: quest.description,
-            cover_image_url: quest.cover_image_url,
-            difficulty: quest.difficulty,
-            is_active: false, // Set as inactive by default
-            tags: quest.tags,
-            category_id: quest.category_id,
-            city_id: quest.city_id,
-            short_description: quest.short_description,
-            estimated_duration_minutes: quest.estimated_duration_minutes,
-            distance_km: quest.distance_km,
-            base_points: quest.base_points,
-            is_featured: quest.is_featured,
-            languages: quest.languages,
-            sort_order: quest.sort_order,
-            seo_slug: `${quest.seo_slug || quest.title.toLowerCase().replace(/\s+/g, '-')}-copy`,
-            created_by: window.AppState?.currentUser?.id || null,
-            requirements: quest.requirements
-        };
-        
-        const { error: insertError } = await supabaseClient
-            .from('quests')
-            .insert([duplicatedQuest]);
-            
-        if (insertError) throw insertError;
-        
-        Utils.showToast('Quest duplicated successfully!', 'success');
-        await loadQuestsData();
-        
-    } catch (error) {
-        Utils.handleError(error, 'Failed to duplicate quest');
-    } finally {
-        showLoading(false);
-    }
-}
-
-// Delete quest
-async function deleteQuest(questId) {
-    if (!confirm('Are you sure you want to delete this quest? This will also delete all associated quest stops. This action cannot be undone.')) {
-        return;
-    }
-    
-    try {
-        showLoading(true);
-        
-        // First delete all quest stops
-        await supabaseClient
-            .from('quest_stops')
-            .delete()
-            .eq('quest_id', questId);
-        
-        // Then delete the quest
-        const { error } = await supabaseClient
-            .from('quests')
-            .delete()
-            .eq('id', questId);
-            
-        if (error) throw error;
-        
-        Utils.showToast('Quest deleted successfully!', 'success');
-        await loadQuestsData();
-        
-    } catch (error) {
-        Utils.handleError(error, 'Failed to delete quest');
-    } finally {
-        showLoading(false);
-    }
-}
-
-// Preview quest
-async function previewQuest(questId) {
-    try {
-        const { data: quest, error } = await supabaseClient
-            .from('quests')
-            .select(`
-                *,
-                cities(name),
-                quest_categories(name),
-                quest_stops(*)
-            `)
-            .eq('id', questId)
-            .single();
-            
-        if (error) throw error;
-        
-        const stops = quest.quest_stops || [];
-        const totalPoints = stops.reduce((sum, stop) => sum + (stop.points || 0), 0);
-        
-        const content = `
-            <div class="space-y-6">
-                <div class="border-b border-gray-200 pb-4">
-                    <h3 class="text-xl font-bold text-gray-900 mb-2">${quest.title}</h3>
-                    <p class="text-gray-600 mb-4">${quest.description}</p>
-                    
-                    <div class="grid grid-cols-2 gap-4 text-sm">
-                        <div><strong>City:</strong> ${quest.cities?.name || 'Unknown'}</div>
-                        <div><strong>Category:</strong> ${quest.quest_categories?.name || 'None'}</div>
-                        <div><strong>Difficulty:</strong> ${Utils.capitalizeFirst(quest.difficulty)}</div>
-                        <div><strong>Duration:</strong> ${quest.estimated_duration_minutes} min</div>
-                        <div><strong>Total Points:</strong> ${totalPoints}</div>
-                        <div><strong>Stops:</strong> ${stops.length}</div>
-                    </div>
-                </div>
-                
-                ${stops.length > 0 ? `
-                    <div>
-                        <h4 class="font-semibold text-gray-900 mb-3">Quest Stops</h4>
-                        <div class="space-y-2">
-                            ${stops.sort((a, b) => a.order_index - b.order_index).map(stop => {
-                                const config = CONFIG.CHALLENGE_TYPES[stop.challenge_type] || CONFIG.CHALLENGE_TYPES.text;
-                                return `
-                                    <div class="flex items-center p-3 bg-gray-50 rounded-lg">
-                                        <span class="flex items-center justify-center w-8 h-8 bg-blue-100 text-blue-800 text-sm font-bold rounded-full mr-3">
-                                            ${stop.order_index}
-                                        </span>
-                                        <div class="flex-1">
-                                            <div class="font-medium">${stop.title}</div>
-                                            <div class="text-sm text-gray-600">${Utils.truncateText(stop.description || stop.challenge_text, 80)}</div>
-                                        </div>
-                                        <div class="flex items-center space-x-2">
-                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-${config.color}-100 text-${config.color}-800">
-                                                <i class="${config.icon} mr-1"></i>
-                                                ${config.name}
-                                            </span>
-                                            <span class="text-sm text-gray-500">${stop.points} pts</span>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
+        return `
+            <div class="bg-white rounded-lg shadow-md p-6 quest-card" data-quest-id="${quest.id}">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">${Utils.escapeHtml(quest.title || 'Untitled Quest')}</h3>
+                        <div class="flex flex-wrap gap-2 mb-2">
+                            <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">${categoryName}</span>
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">${cityName}</span>
+                            <span class="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">${quest.difficulty || 'Unknown'}</span>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-3">${Utils.escapeHtml(quest.description || 'No description')}</p>
+                        <div class="flex gap-4 text-sm text-gray-500">
+                            <span>⏱️ ${quest.estimated_duration || 0} min</span>
+                            <span>📍 ${quest.estimated_distance || 0} km</span>
+                            <span>🏁 ${stopCount} stops</span>
                         </div>
                     </div>
-                ` : `
-                    <div class="text-center py-8 text-gray-500">
-                        <i class="fas fa-map-marker-alt text-3xl mb-2"></i>
-                        <p>No quest stops configured yet</p>
+                    <div class="flex gap-2 ml-4">
+                        <button onclick="QuestManager.editQuest('${quest.id}')" 
+                                class="text-blue-600 hover:text-blue-800 p-2" title="Edit Quest">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                        </button>
+                        <button onclick="QuestManager.duplicateQuest('${quest.id}')" 
+                                class="text-green-600 hover:text-green-800 p-2" title="Duplicate Quest">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                        </button>
+                        <button onclick="QuestManager.deleteQuest('${quest.id}')" 
+                                class="text-red-600 hover:text-red-800 p-2" title="Delete Quest">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                        <button onclick="QuestManager.manageQuestStops('${quest.id}')" 
+                                class="text-purple-600 hover:text-purple-800 p-2" title="Manage Quest Stops">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                        </button>
                     </div>
-                `}
+                </div>
             </div>
         `;
-        
-        if (typeof window.ModalManager !== 'undefined' && window.ModalManager.create) {
-            window.ModalManager.create('questPreviewModal', `Quest Preview: ${quest.title}`, content, 'xl');
-            window.ModalManager.show('questPreviewModal');
-        } else {
-            console.error('ModalManager not available for quest preview modal');
-            Utils.showToast('Error: Modal system not initialized', 'error');
+    },
+
+    async loadCategoriesForModal() {
+        try {
+            const { data: categories, error } = await supabase
+                .from('quest_categories')
+                .select('*')
+                .order('name');
+
+            if (error) throw error;
+
+            // Update category dropdown whenever modal is shown
+            document.addEventListener('DOMContentLoaded', () => {
+                this.updateCategoryDropdown(categories);
+            });
+            
+            // Store for later use
+            this.categories = categories || [];
+        } catch (error) {
+            console.error('Error loading categories:', error);
         }
-        
-    } catch (error) {
-        Utils.handleError(error, 'Failed to load quest preview');
-    }
-}
+    },
 
-// Export quest
-async function exportQuest(questId) {
-    try {
-        const { data: quest, error } = await supabaseClient
-            .from('quests')
-            .select(`
-                *,
-                cities(name, id),
-                quest_categories(name, id),
-                quest_stops(*)
-            `)
-            .eq('id', questId)
-            .single();
+    async loadCitiesForModal() {
+        try {
+            const { data: cities, error } = await supabase
+                .from('cities')
+                .select('*')
+                .order('name');
+
+            if (error) throw error;
+
+            // Update city dropdown whenever modal is shown
+            document.addEventListener('DOMContentLoaded', () => {
+                this.updateCityDropdown(cities);
+            });
             
-        if (error) throw error;
-        
-        const exportData = {
-            exported_at: new Date().toISOString(),
-            quest: quest
-        };
-        
-        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `quest_${Utils.slugify(quest.title)}_${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        Utils.showToast('Quest exported successfully!', 'success');
-        
-    } catch (error) {
-        Utils.handleError(error, 'Failed to export quest');
-    }
-}
+            // Store for later use
+            this.cities = cities || [];
+        } catch (error) {
+            console.error('Error loading cities:', error);
+        }
+    },
 
-// Helper functions for loading dropdown data
-async function loadCitiesForDropdown() {
-    try {
-        const { data: cities, error } = await supabaseClient
-            .from('cities')
-            .select('id, name')
-            .eq('is_active', true)
-            .order('name');
+    updateCategoryDropdown(categories) {
+        const categorySelect = document.getElementById('questCategory');
+        if (categorySelect && categories) {
+            const currentValue = categorySelect.value;
+            categorySelect.innerHTML = '<option value="">Select Category</option>' +
+                categories.map(cat => `<option value="${cat.id}" ${currentValue === cat.id ? 'selected' : ''}>${Utils.escapeHtml(cat.name)}</option>`).join('');
+        }
+    },
+
+    updateCityDropdown(cities) {
+        const citySelect = document.getElementById('questCity');
+        if (citySelect && cities) {
+            const currentValue = citySelect.value;
+            citySelect.innerHTML = '<option value="">Select City</option>' +
+                cities.map(city => `<option value="${city.id}" ${currentValue === city.id ? 'selected' : ''}>${Utils.escapeHtml(city.name)}</option>`).join('');
+        }
+    },
+
+    createQuest() {
+        console.log('Creating new quest');
+        showModal('quest');
+        
+        // Update dropdowns with current data
+        setTimeout(() => {
+            this.updateCategoryDropdown(this.categories);
+            this.updateCityDropdown(this.cities);
+        }, 100);
+    },
+
+    editQuest(questId) {
+        console.log('Editing quest:', questId);
+        const quest = this.currentQuests.find(q => q.id === questId);
+        if (!quest) {
+            Utils.showNotification('Quest not found', 'error');
+            return;
+        }
+
+        showModal('quest', quest);
+        
+        // Update dropdowns with current data
+        setTimeout(() => {
+            this.updateCategoryDropdown(this.categories);
+            this.updateCityDropdown(this.cities);
+        }, 100);
+    },
+
+    async duplicateQuest(questId) {
+        try {
+            const quest = this.currentQuests.find(q => q.id === questId);
+            if (!quest) {
+                Utils.showNotification('Quest not found', 'error');
+                return;
+            }
+
+            // Create quest copy with new ID
+            const questCopy = { ...quest };
+            delete questCopy.id;
+            questCopy.id = Utils.generateId();
+            questCopy.title = questCopy.title + ' (Copy)';
+
+            // Insert the duplicated quest
+            const { data: newQuest, error: questError } = await supabase
+                .from('quests')
+                .insert([questCopy])
+                .select()
+                .single();
+
+            if (questError) throw questError;
+
+            // Load quest stops for duplication
+            const { data: questStops, error: stopsError } = await supabase
+                .from('quest_stops')
+                .select('*')
+                .eq('quest_id', questId);
+
+            if (stopsError) throw stopsError;
+
+            // Duplicate quest stops if any exist
+            if (questStops && questStops.length > 0) {
+                const stopsCopy = questStops.map(stop => {
+                    const stopCopy = { ...stop };
+                    delete stopCopy.id;
+                    stopCopy.id = Utils.generateId();
+                    stopCopy.quest_id = newQuest.id;
+                    return stopCopy;
+                });
+
+                const { error: stopsInsertError } = await supabase
+                    .from('quest_stops')
+                    .insert(stopsCopy);
+
+                if (stopsInsertError) throw stopsInsertError;
+            }
+
+            Utils.showNotification('Quest duplicated successfully!', 'success');
+            await this.loadQuests();
+        } catch (error) {
+            console.error('Error duplicating quest:', error);
+            Utils.showNotification('Error duplicating quest: ' + error.message, 'error');
+        }
+    },
+
+    async deleteQuest(questId) {
+        if (!confirm('Are you sure you want to delete this quest? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            // Delete quest stops first (foreign key constraint)
+            const { error: stopsError } = await supabase
+                .from('quest_stops')
+                .delete()
+                .eq('quest_id', questId);
+
+            if (stopsError) throw stopsError;
+
+            // Delete the quest
+            const { error: questError } = await supabase
+                .from('quests')
+                .delete()
+                .eq('id', questId);
+
+            if (questError) throw questError;
+
+            Utils.showNotification('Quest deleted successfully!', 'success');
+            await this.loadQuests();
+        } catch (error) {
+            console.error('Error deleting quest:', error);
+            Utils.showNotification('Error deleting quest: ' + error.message, 'error');
+        }
+    },
+
+    async saveQuest(questData) {
+        try {
+            console.log('Saving quest data:', questData);
+
+            // Clean up data
+            const cleanData = { ...questData };
             
-        if (error) throw error;
-        
-        return cities.map(city => ({
-            value: city.id,
-            label: city.name
-        }));
-    } catch (error) {
-        console.error('Error loading cities:', error);
-        return [];
-    }
-}
+            // Convert numeric fields
+            if (cleanData.estimated_duration) {
+                cleanData.estimated_duration = parseInt(cleanData.estimated_duration);
+            }
+            if (cleanData.estimated_distance) {
+                cleanData.estimated_distance = parseFloat(cleanData.estimated_distance);
+            }
 
-async function loadCategoriesForDropdown() {
-    try {
-        const { data: categories, error } = await supabaseClient
-            .from('quest_categories')
-            .select('id, name')
-            .eq('is_active', true)
-            .order('name');
+            // Remove empty strings
+            Object.keys(cleanData).forEach(key => {
+                if (cleanData[key] === '') {
+                    delete cleanData[key];
+                }
+            });
+
+            let result;
+            if (cleanData.id) {
+                // Update existing quest
+                const updateData = { ...cleanData };
+                delete updateData.id; // Don't include ID in update
+                
+                const { data, error } = await supabase
+                    .from('quests')
+                    .update(updateData)
+                    .eq('id', cleanData.id)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                result = data;
+                Utils.showNotification('Quest updated successfully!', 'success');
+            } else {
+                // Create new quest with generated ID
+                cleanData.id = Utils.generateId();
+                
+                const { data, error } = await supabase
+                    .from('quests')
+                    .insert([cleanData])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                result = data;
+                Utils.showNotification('Quest created successfully!', 'success');
+            }
+
+            await this.loadQuests();
+        } catch (error) {
+            console.error('Error saving quest:', error);
+            Utils.showNotification('Error saving quest: ' + error.message, 'error');
+        }
+    },
+
+    manageQuestStops(questId) {
+        console.log('Managing quest stops for quest:', questId);
+        
+        // Switch to quest stops view and set quest filter
+        const questStopsTab = document.querySelector('[data-tab="quest-stops"]');
+        if (questStopsTab) {
+            questStopsTab.click();
             
-        if (error) throw error;
-        
-        return categories.map(category => ({
-            value: category.id,
-            label: category.name
-        }));
-    } catch (error) {
-        console.error('Error loading categories:', error);
-        return [];
+            // Set quest filter after a brief delay to ensure the quest stops module is loaded
+            setTimeout(() => {
+                if (window.QuestStopManager && window.QuestStopManager.filterByQuest) {
+                    window.QuestStopManager.filterByQuest(questId);
+                }
+            }, 100);
+        }
     }
-}
-
-// Make functions globally available
-window.Quests = {
-    loadQuestsData,
-    createQuestCard,
-    showQuestModal,
-    editQuest,
-    duplicateQuest,
-    deleteQuest,
-    previewQuest,
-    exportQuest
 };
 
-// Make individual functions globally available for onclick handlers
-window.loadQuestsData = loadQuestsData;
-window.showQuestModal = showQuestModal;
-window.editQuest = editQuest;
-window.duplicateQuest = duplicateQuest;
-window.deleteQuest = deleteQuest;
-window.previewQuest = previewQuest;
-window.exportQuest = exportQuest;
+// Make saveQuest globally available for the modal system
+window.saveQuest = (data) => QuestManager.saveQuest(data);
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => QuestManager.init());
+} else {
+    QuestManager.init();
+}
+
+// Export for use in other modules
+window.QuestManager = QuestManager;
