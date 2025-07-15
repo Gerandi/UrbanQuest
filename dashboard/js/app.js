@@ -63,7 +63,7 @@ function setupEventListeners() {
             Utils.showToast('Please select a location on the map first!', 'warning');
             return;
         }
-        Modals.showQuestStopModal();
+        showQuestStopModal();
     });
     document.getElementById('addCityBtn')?.addEventListener('click', () => showCityModal());
     document.getElementById('addCategoryBtn')?.addEventListener('click', () => showCategoryModal());

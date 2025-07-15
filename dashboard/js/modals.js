@@ -1,114 +1,4 @@
-// Modal Management System
-
-class ModalManager {
-    constructor() {
-        this.modals = new Map();
-        this.setupModalContainer();
-    }
-
-    setupModalContainer() {
-        const container = document.getElementById('modalsContainer');
-        if (!container) {
-            console.error('Modals container not found');
-            return;
-        }
-        
-        // Add escape key listener
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                this.closeTopModal();
-            }
-        });
-    }
-
-    create(id, title, content, size = 'md', closable = true) {
-        const sizes = {
-            sm: 'max-w-md',
-            md: 'max-w-2xl',
-            lg: 'max-w-4xl',
-            xl: 'max-w-6xl',
-            full: 'max-w-7xl'
-        };
-
-        const closeButton = closable ? `
-            <button onclick="ModalManager.close('${id}')" 
-                    class="text-gray-400 hover:text-gray-600 transition duration-200">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-        ` : '';
-
-        const modalHtml = `
-            <div id="${id}" class="modal fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
-                <div class="bg-white rounded-xl shadow-2xl ${sizes[size]} w-full max-h-full overflow-hidden">
-                    <div class="flex justify-between items-center p-6 border-b border-gray-200">
-                        <h2 class="text-xl font-bold text-gray-900">${title}</h2>
-                        ${closeButton}
-                    </div>
-                    <div class="p-6 overflow-y-auto max-h-96">
-                        ${content}
-                    </div>
-                </div>
-            </div>
-        `;
-
-        const container = document.getElementById('modalsContainer');
-        container.insertAdjacentHTML('beforeend', modalHtml);
-        
-        const modal = document.getElementById(id);
-        this.modals.set(id, modal);
-        
-        // Add click outside to close
-        if (closable) {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    this.close(id);
-                }
-            });
-        }
-
-        return modal;
-    }
-
-    show(id) {
-        const modal = this.modals.get(id);
-        if (modal) {
-            modal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-    }
-
-    close(id) {
-        const modal = this.modals.get(id);
-        if (modal) {
-            modal.classList.remove('active');
-            document.body.style.overflow = '';
-            setTimeout(() => {
-                modal.remove();
-                this.modals.delete(id);
-            }, 300);
-        }
-    }
-
-    closeAll() {
-        this.modals.forEach((modal, id) => {
-            this.close(id);
-        });
-    }
-
-    closeTopModal() {
-        const activeModals = Array.from(this.modals.values()).filter(modal => 
-            modal.classList.contains('active')
-        );
-        if (activeModals.length > 0) {
-            const topModal = activeModals[activeModals.length - 1];
-            const modalId = topModal.id;
-            this.close(modalId);
-        }
-    }
-}
-
-// Initialize global modal manager
-window.ModalManager = new ModalManager();
+// Quest Stop Modal Management (uses global ModalManager from modal-manager.js)
 
 // Quest Stop Modal
 function showQuestStopModal(questStop = null) {
@@ -288,7 +178,7 @@ async function handleQuestStopSubmit(existingQuestStop = null) {
             throw new Error('Please select a location on the map');
         }
 
-        // Build quest stop data
+        // Build quest stop data - only include fields that exist in the database
         const questStopData = {
             quest_id: formData.get('questId'),
             title: formData.get('title'),
@@ -320,7 +210,7 @@ async function handleQuestStopSubmit(existingQuestStop = null) {
                 formData.get('option3')
             ].filter(opt => opt && opt.trim());
             
-            questStopData.multiple_choice_options = JSON.stringify(options);
+            questStopData.multiple_choice_options = options;
             questStopData.correct_choice_index = parseInt(formData.get('correctChoiceIndex'));
         }
         
@@ -352,11 +242,14 @@ async function handleQuestStopSubmit(existingQuestStop = null) {
         
         // Clear selected location
         window.AppState.selectedLocation = null;
-        document.getElementById('locationDisplay').textContent = 'None selected';
+        const locationDisplay = document.getElementById('locationDisplay');
+        if (locationDisplay) {
+            locationDisplay.textContent = 'None selected';
+        }
         
         // Reload quest stops
-        if (typeof loadQuestStopsData === 'function') {
-            await loadQuestStopsData();
+        if (typeof QuestStops !== 'undefined' && QuestStops.loadQuestStopsData) {
+            await QuestStops.loadQuestStopsData();
         }
 
     } catch (error) {
@@ -414,3 +307,8 @@ window.Modals = {
     updateChallengeFields,
     handleQuestStopSubmit
 };
+
+// Make functions globally available
+window.showQuestStopModal = showQuestStopModal;
+window.loadCitiesForDropdown = loadCitiesForDropdown;
+window.loadQuestsForDropdown = loadQuestsForDropdown;

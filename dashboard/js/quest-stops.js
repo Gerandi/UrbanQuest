@@ -277,7 +277,7 @@ async function editQuestStop(stopId) {
         };
         
         // Show the modal with existing data
-        Modals.showQuestStopModal(questStop);
+        showQuestStopModal(questStop);
         
     } catch (error) {
         Utils.handleError(error, 'Failed to load quest stop for editing');
@@ -296,11 +296,24 @@ async function duplicateQuestStop(stopId) {
         if (error) throw error;
         
         // Create a copy with modified title and incremented order
-        const { id, created_at, updated_at, ...stopDataWithoutId } = questStop;
         const duplicatedStop = {
-            ...stopDataWithoutId,
+            quest_id: questStop.quest_id,
             title: `${questStop.title} (Copy)`,
-            order_index: questStop.order_index + 1
+            description: questStop.description,
+            clue: questStop.clue,
+            challenge_type: questStop.challenge_type,
+            challenge_text: questStop.challenge_text,
+            challenge_answer: questStop.challenge_answer,
+            challenge_regex: questStop.challenge_regex,
+            multiple_choice_options: questStop.multiple_choice_options,
+            correct_choice_index: questStop.correct_choice_index,
+            points: questStop.points,
+            radius: questStop.radius,
+            order_index: questStop.order_index + 1,
+            latitude: questStop.latitude,
+            longitude: questStop.longitude,
+            success_message: questStop.success_message,
+            failure_message: questStop.failure_message
         };
         
         const { error: insertError } = await supabaseClient
@@ -489,4 +502,3 @@ window.QuestStops = {
 window.editQuestStop = editQuestStop;
 window.duplicateQuestStop = duplicateQuestStop;
 window.deleteQuestStop = deleteQuestStop;
-window.showQuestStopModal = Modals.showQuestStopModal;

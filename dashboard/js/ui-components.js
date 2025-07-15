@@ -67,7 +67,7 @@ function createButton(text, onClick, variant = 'primary', size = 'md', icon = nu
 }
 
 // Create a form input component
-function createInput(id, label, type = 'text', required = false, placeholder = '', value = '') {
+function createInput(id, label, type = 'text', required = false, placeholder = '', value = '', additionalAttrs = '') {
     const requiredHtml = required ? '<span class="text-red-500">*</span>' : '';
     const requiredAttr = required ? 'required' : '';
     
@@ -83,6 +83,7 @@ function createInput(id, label, type = 'text', required = false, placeholder = '
                 placeholder="${placeholder}"
                 value="${value}"
                 ${requiredAttr}
+                ${additionalAttrs}
                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
         </div>
