@@ -295,8 +295,9 @@ async function duplicateQuestStop(stopId) {
             
         if (error) throw error;
         
-        // Create a copy with modified title and incremented order
+        // Create a copy with new ID, modified title and incremented order
         const duplicatedStop = {
+            id: Utils.generateId('stop'),
             quest_id: questStop.quest_id,
             title: `${questStop.title} (Copy)`,
             description: questStop.description,

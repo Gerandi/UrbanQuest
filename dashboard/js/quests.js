@@ -188,14 +188,14 @@ function showQuestModal(quest = null) {
         `;
 
         // Ensure ModalManager is available
-        if (typeof ModalManager === 'undefined' || !ModalManager.create) {
+        if (typeof window.ModalManager === 'undefined' || !window.ModalManager.create) {
             console.error('ModalManager not available');
             Utils.showToast('Error: Modal system not initialized', 'error');
             return;
         }
         
-        ModalManager.create('questModal', title, content, 'lg');
-        ModalManager.show('questModal');
+        window.ModalManager.create('questModal', title, content, 'lg');
+        window.ModalManager.show('questModal');
 
         // Set up form handler
         setupQuestForm(quest);
@@ -233,6 +233,11 @@ async function handleQuestSubmit(existingQuest = null) {
             is_active: formData.get('isActive') === '1',
             is_public: formData.get('isPublic') === '1'
         };
+
+        // Add ID for new quests
+        if (!existingQuest) {
+            questData.id = Utils.generateId('quest');
+        }
 
         // Save to database
         let result;
@@ -295,12 +300,27 @@ async function duplicateQuest(questId) {
             
         if (error) throw error;
         
-        // Create a copy with modified title
-        const { id, created_at, updated_at, ...questDataWithoutId } = quest;
+        // Create a copy with new ID and modified title
         const duplicatedQuest = {
-            ...questDataWithoutId,
+            id: Utils.generateId('quest'),
             title: `${quest.title} (Copy)`,
-            is_active: false // Set as inactive by default
+            description: quest.description,
+            cover_image_url: quest.cover_image_url,
+            difficulty: quest.difficulty,
+            is_active: false, // Set as inactive by default
+            tags: quest.tags,
+            category_id: quest.category_id,
+            city_id: quest.city_id,
+            short_description: quest.short_description,
+            estimated_duration_minutes: quest.estimated_duration_minutes,
+            distance_km: quest.distance_km,
+            base_points: quest.base_points,
+            is_featured: quest.is_featured,
+            languages: quest.languages,
+            sort_order: quest.sort_order,
+            seo_slug: `${quest.seo_slug || quest.title.toLowerCase().replace(/\s+/g, '-')}-copy`,
+            created_by: window.AppState?.currentUser?.id || null,
+            requirements: quest.requirements
         };
         
         const { error: insertError } = await supabaseClient
@@ -423,9 +443,9 @@ async function previewQuest(questId) {
             </div>
         `;
         
-        if (typeof ModalManager !== 'undefined' && ModalManager.create) {
-            ModalManager.create('questPreviewModal', `Quest Preview: ${quest.title}`, content, 'xl');
-            ModalManager.show('questPreviewModal');
+        if (typeof window.ModalManager !== 'undefined' && window.ModalManager.create) {
+            window.ModalManager.create('questPreviewModal', `Quest Preview: ${quest.title}`, content, 'xl');
+            window.ModalManager.show('questPreviewModal');
         } else {
             console.error('ModalManager not available for quest preview modal');
             Utils.showToast('Error: Modal system not initialized', 'error');

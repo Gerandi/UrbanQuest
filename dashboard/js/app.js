@@ -482,8 +482,8 @@ window.testModalManager = function() {
     }
     
     try {
-        ModalManager.create('testModal', 'Test Modal', '<p>ModalManager is working correctly!</p>', 'md');
-        ModalManager.show('testModal');
+        window.ModalManager.create('testModal', 'Test Modal', '<p>ModalManager is working correctly!</p>', 'md');
+        window.ModalManager.show('testModal');
         console.log('✅ ModalManager test passed');
         Utils.showToast('ModalManager test passed!', 'success');
     } catch (error) {

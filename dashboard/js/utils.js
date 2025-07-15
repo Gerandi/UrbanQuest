@@ -302,6 +302,14 @@ function ensureModalManager() {
     return true;
 }
 
+// Generate unique ID for database entities
+function generateId(prefix = '') {
+    const timestamp = Date.now().toString(36);
+    const randomPart = Math.random().toString(36).substring(2, 8);
+    const uniqueId = prefix ? `${prefix}_${timestamp}_${randomPart}` : `${timestamp}_${randomPart}`;
+    return uniqueId.toLowerCase();
+}
+
 // Export utilities for use in other files
 window.Utils = {
     showToast,
@@ -332,5 +340,6 @@ window.Utils = {
     getChallengeName,
     checkConnection,
     createFallbackModal,
-    ensureModalManager
+    ensureModalManager,
+    generateId
 };

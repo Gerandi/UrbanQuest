@@ -37,7 +37,7 @@ function showQuestStopModal(questStop = null) {
                 </div>
                 
                 <div class="flex justify-end space-x-4 pt-4">
-                    <button type="button" onclick="ModalManager.close('questStopModal')" 
+                    <button type="button" onclick="window.ModalManager.close('questStopModal')" 
                             class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg">
                         Cancel
                     </button>
@@ -50,14 +50,14 @@ function showQuestStopModal(questStop = null) {
         `;
 
         // Ensure ModalManager is available
-        if (typeof ModalManager === 'undefined' || !ModalManager.create) {
+        if (typeof window.ModalManager === 'undefined' || !window.ModalManager.create) {
             console.error('ModalManager not available');
             Utils.showToast('Error: Modal system not initialized', 'error');
             return;
         }
         
-        ModalManager.create('questStopModal', title, content, 'lg');
-        ModalManager.show('questStopModal');
+        window.ModalManager.create('questStopModal', title, content, 'lg');
+        window.ModalManager.show('questStopModal');
 
         // Set up form handlers
         setupQuestStopForm(questStop);
@@ -202,6 +202,11 @@ async function handleQuestStopSubmit(existingQuestStop = null) {
             failure_message: formData.get('failureMessage') || null
         };
 
+        // Add ID for new quest stops
+        if (!existingQuestStop) {
+            questStopData.id = Utils.generateId('stop');
+        }
+
         // Handle challenge-specific fields
         const challengeType = formData.get('challengeType');
         
@@ -245,7 +250,7 @@ async function handleQuestStopSubmit(existingQuestStop = null) {
             'success'
         );
         
-        ModalManager.close('questStopModal');
+        window.ModalManager.close('questStopModal');
         
         // Clear selected location
         window.AppState.selectedLocation = null;

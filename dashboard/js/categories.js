@@ -203,14 +203,14 @@ function showCategoryModal(category = null) {
     `;
 
     // Ensure ModalManager is available
-    if (typeof ModalManager === 'undefined' || !ModalManager.create) {
+    if (typeof window.ModalManager === 'undefined' || !window.ModalManager.create) {
         console.error('ModalManager not available');
         Utils.showToast('Error: Modal system not initialized', 'error');
         return;
     }
     
-    ModalManager.create('categoryModal', title, content, 'lg');
-    ModalManager.show('categoryModal');
+    window.ModalManager.create('categoryModal', title, content, 'lg');
+    window.ModalManager.show('categoryModal');
 
     // Set up form handler
     setupCategoryForm(category);
@@ -457,9 +457,9 @@ async function viewCategoryQuests(categoryId) {
             </div>
         `;
         
-        if (typeof ModalManager !== 'undefined' && ModalManager.create) {
-            ModalManager.create('categoryQuestsModal', `Quests in ${categoryData.name}`, content, 'lg');
-            ModalManager.show('categoryQuestsModal');
+        if (typeof window.ModalManager !== 'undefined' && window.ModalManager.create) {
+            window.ModalManager.create('categoryQuestsModal', `Quests in ${categoryData.name}`, content, 'lg');
+            window.ModalManager.show('categoryQuestsModal');
         } else {
             console.error('ModalManager not available for category quests modal');
             Utils.showToast('Error: Modal system not initialized', 'error');

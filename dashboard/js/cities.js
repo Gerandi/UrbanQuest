@@ -162,14 +162,14 @@ function showCityModal(city = null) {
     `;
 
     // Ensure ModalManager is available
-    if (typeof ModalManager === 'undefined' || !ModalManager.create) {
+    if (typeof window.ModalManager === 'undefined' || !window.ModalManager.create) {
         console.error('ModalManager not available');
         Utils.showToast('Error: Modal system not initialized', 'error');
         return;
     }
     
-    ModalManager.create('cityModal', title, content, 'lg');
-    ModalManager.show('cityModal');
+    window.ModalManager.create('cityModal', title, content, 'lg');
+    window.ModalManager.show('cityModal');
 
     // Set up form handler
     setupCityForm(city);
@@ -400,9 +400,9 @@ async function viewCityQuests(cityId) {
             </div>
         `;
         
-        if (typeof ModalManager !== 'undefined' && ModalManager.create) {
-            ModalManager.create('cityQuestsModal', `Quests in ${cityData.name}`, content, 'lg');
-            ModalManager.show('cityQuestsModal');
+        if (typeof window.ModalManager !== 'undefined' && window.ModalManager.create) {
+            window.ModalManager.create('cityQuestsModal', `Quests in ${cityData.name}`, content, 'lg');
+            window.ModalManager.show('cityQuestsModal');
         } else {
             console.error('ModalManager not available for city quests modal');
             Utils.showToast('Error: Modal system not initialized', 'error');
@@ -439,9 +439,9 @@ async function viewCityMap(cityId) {
             </div>
         `;
         
-        if (typeof ModalManager !== 'undefined' && ModalManager.create) {
-            ModalManager.create('cityMapModal', `Map: ${city.name}`, content, 'xl');
-            ModalManager.show('cityMapModal');
+        if (typeof window.ModalManager !== 'undefined' && window.ModalManager.create) {
+            window.ModalManager.create('cityMapModal', `Map: ${city.name}`, content, 'xl');
+            window.ModalManager.show('cityMapModal');
         } else {
             console.error('ModalManager not available for city map modal');
             Utils.showToast('Error: Modal system not initialized', 'error');

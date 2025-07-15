@@ -103,7 +103,7 @@ class ModalManager {
             <div class="modal-content size-${size}">
                 <div class="modal-header">
                     <h3 class="modal-title">${title}</h3>
-                    <button type="button" class="modal-close" onclick="ModalManager.close('${id}')">&times;</button>
+                    <button type="button" class="modal-close" onclick="window.ModalManager.close('${id}')">&times;</button>
                 </div>
                 <div class="modal-body">
                     ${content}
@@ -193,19 +193,18 @@ class ModalManager {
     }
 }
 
-// Initialize ModalManager when DOM is ready
-function initializeModalManager() {
-    if (typeof window.ModalManager === 'undefined') {
-        window.ModalManager = new ModalManager();
-        console.log('ModalManager initialized successfully');
-    }
+// Create global instance immediately
+window.ModalManager = new ModalManager();
+console.log('ModalManager initialized successfully');
+
+// Make it available in global scope for all modules
+if (typeof globalThis !== 'undefined') {
+    globalThis.ModalManager = window.ModalManager;
 }
 
-// Initialize immediately if DOM is already loaded, otherwise wait for DOMContentLoaded
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeModalManager);
-} else {
-    initializeModalManager();
+// Also make it available without window prefix in script scope
+if (typeof global !== 'undefined') {
+    global.ModalManager = window.ModalManager;
 }
 
 // Export for modules
