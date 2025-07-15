@@ -6,14 +6,14 @@ async function loadUsersData() {
         Utils.showElementLoading('usersList');
         
         const { data: users, error } = await supabaseClient
-            .from('users')
+            .from('profiles')
             .select(`
                 *,
                 user_quest_progress(
                     id,
-                    is_completed,
-                    total_points,
-                    quests(title)
+                    status,
+                    points_earned,
+                    quest_id
                 )
             `)
             .order('created_at', { ascending: false });
@@ -52,13 +52,13 @@ async function loadUsersData() {
 // Create a user card component
 function createUserCard(user) {
     const progress = user.user_quest_progress || [];
-    const completedQuests = progress.filter(p => p.is_completed).length;
-    const totalPoints = progress.reduce((sum, p) => sum + (p.total_points || 0), 0);
-    const inProgressQuests = progress.filter(p => !p.is_completed).length;
+    const completedQuests = progress.filter(p => p.status === 'completed').length;
+    const totalPoints = user.total_points || 0;
+    const inProgressQuests = progress.filter(p => p.status === 'in_progress').length;
     
     // Determine user status
-    const isActive = user.last_active_at && 
-        new Date(user.last_active_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // Active in last 7 days
+    const isActive = user.last_active && 
+        new Date(user.last_active) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // Active in last 7 days
     
     const statusBadge = isActive 
         ? UIComponents.createBadge('Active', 'green')
@@ -76,14 +76,14 @@ function createUserCard(user) {
                 <div class="flex items-start space-x-4">
                     <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                         <span class="text-white font-bold text-lg">
-                            ${(user.full_name || user.email || 'U').charAt(0).toUpperCase()}
+                            ${(user.display_name || user.email || 'U').charAt(0).toUpperCase()}
                         </span>
                     </div>
                     
                     <div class="flex-1">
                         <div class="flex items-center mb-2">
                             <h3 class="text-lg font-semibold text-gray-900 mr-3">
-                                ${user.full_name || 'No name provided'}
+                                ${user.display_name || 'No name provided'}
                             </h3>
                             ${statusBadge}
                             ${roleBadge}
@@ -96,10 +96,10 @@ function createUserCard(user) {
                                 <i class="fas fa-calendar mr-1"></i>
                                 Joined ${Utils.formatDate(user.created_at)}
                             </span>
-                            ${user.last_active_at ? `
+                            ${user.last_active ? `
                                 <span>
                                     <i class="fas fa-clock mr-1"></i>
-                                    Active ${Utils.formatDate(user.last_active_at)}
+                                    Active ${Utils.formatDate(user.last_active)}
                                 </span>
                             ` : ''}
                             ${user.preferred_language ? `
@@ -160,12 +160,11 @@ function createUserCard(user) {
 async function viewUserDetails(userId) {
     try {
         const { data: user, error } = await supabaseClient
-            .from('users')
+            .from('profiles')
             .select(`
                 *,
                 user_quest_progress(
-                    *,
-                    quests(title, difficulty, estimated_duration)
+                    *
                 )
             `)
             .eq('id', userId)
@@ -174,9 +173,9 @@ async function viewUserDetails(userId) {
         if (error) throw error;
         
         const progress = user.user_quest_progress || [];
-        const completedQuests = progress.filter(p => p.is_completed);
-        const inProgressQuests = progress.filter(p => !p.is_completed);
-        const totalPoints = progress.reduce((sum, p) => sum + (p.total_points || 0), 0);
+        const completedQuests = progress.filter(p => p.status === 'completed');
+        const inProgressQuests = progress.filter(p => p.status === 'in_progress');
+        const totalPoints = user.total_points || 0;
         
         const content = `
             <div class="space-y-6">
@@ -185,19 +184,19 @@ async function viewUserDetails(userId) {
                     <div class="flex items-start space-x-4">
                         <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                             <span class="text-white font-bold text-2xl">
-                                ${(user.full_name || user.email || 'U').charAt(0).toUpperCase()}
+                                ${(user.display_name || user.email || 'U').charAt(0).toUpperCase()}
                             </span>
                         </div>
                         
                         <div class="flex-1">
                             <h3 class="text-xl font-bold text-gray-900 mb-2">
-                                ${user.full_name || 'No name provided'}
+                                ${user.display_name || 'No name provided'}
                             </h3>
                             <div class="grid grid-cols-2 gap-4 text-sm">
                                 <div><strong>Email:</strong> ${user.email}</div>
                                 <div><strong>Role:</strong> ${Utils.capitalizeFirst(user.role || 'user')}</div>
                                 <div><strong>Joined:</strong> ${Utils.formatDate(user.created_at)}</div>
-                                <div><strong>Last Active:</strong> ${user.last_active_at ? Utils.formatDate(user.last_active_at) : 'Never'}</div>
+                                <div><strong>Last Active:</strong> ${user.last_active ? Utils.formatDate(user.last_active) : 'Never'}</div>
                                 <div><strong>Language:</strong> ${user.preferred_language?.toUpperCase() || 'Not set'}</div>
                                 <div><strong>Total Points:</strong> ${Utils.formatNumber(totalPoints)}</div>
                             </div>
@@ -297,7 +296,7 @@ async function viewUserDetails(userId) {
 async function editUser(userId) {
     try {
         const { data: user, error } = await supabaseClient
-            .from('users')
+            .from('profiles')
             .select('*')
             .eq('id', userId)
             .single();
@@ -307,7 +306,7 @@ async function editUser(userId) {
         const content = `
             <form id="userForm" class="space-y-4">
                 <div class="grid grid-cols-2 gap-4">
-                    ${UIComponents.createInput('fullName', 'Full Name', 'text', false, 'Enter full name', user.full_name || '')}
+                    ${UIComponents.createInput('displayName', 'Display Name', 'text', false, 'Enter display name', user.display_name || '')}
                     ${UIComponents.createInput('email', 'Email', 'email', true, 'Enter email', user.email || '')}
                 </div>
                 
@@ -375,15 +374,14 @@ async function handleUserEdit(userId) {
 
         // Build user data
         const userData = {
-            full_name: formData.get('fullName') || null,
+            display_name: formData.get('displayName') || null,
             email: formData.get('email'),
             role: formData.get('role'),
-            preferred_language: formData.get('preferredLanguage') || null,
-            bio: formData.get('bio') || null
+            preferred_language: formData.get('preferredLanguage') || null
         };
 
         const { error } = await supabaseClient
-            .from('users')
+            .from('profiles')
             .update(userData)
             .eq('id', userId);
 
@@ -417,7 +415,7 @@ async function deleteUser(userId) {
         
         // Then delete the user
         const { error } = await supabaseClient
-            .from('users')
+            .from('profiles')
             .delete()
             .eq('id', userId);
             
@@ -437,12 +435,11 @@ async function deleteUser(userId) {
 async function exportUsers() {
     try {
         const { data: users, error } = await supabaseClient
-            .from('users')
+            .from('profiles')
             .select(`
                 *,
                 user_quest_progress(
-                    *,
-                    quests(title)
+                    *
                 )
             `)
             .order('created_at', { ascending: false });
@@ -518,9 +515,9 @@ async function toggleUserBan(userId, isBanned) {
         
         const action = isBanned ? 'banned' : 'unbanned';
         
-        // Update user's banned status
+        // Update user's banned status (note: these fields may need to be added to profiles table)
         const { error } = await supabaseClient
-            .from('users')
+            .from('profiles')
             .update({ 
                 is_banned: isBanned,
                 banned_at: isBanned ? new Date().toISOString() : null,

@@ -31,9 +31,9 @@ async function loadAnalyticsData() {
 async function loadUserAnalytics() {
     try {
         const [usersRes, newUsersRes, activeUsersRes] = await Promise.all([
-            supabaseClient.from('users').select('id, created_at', { count: 'exact', head: true }),
-            supabaseClient.from('users').select('id').gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
-            supabaseClient.from('users').select('id').gte('last_active_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+            supabaseClient.from('profiles').select('id, created_at', { count: 'exact', head: true }),
+            supabaseClient.from('profiles').select('id').gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
+            supabaseClient.from('profiles').select('id').gte('last_active', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
         ]);
         
         const totalUsers = usersRes.count || 0;
@@ -61,19 +61,15 @@ async function loadUserAnalytics() {
 // Quest Analytics
 async function loadQuestAnalytics() {
     try {
-        const [questsRes, completionsRes, avgRatingRes] = await Promise.all([
+        const [questsRes, completionsRes] = await Promise.all([
             supabaseClient.from('quests').select('id, is_active', { count: 'exact' }),
-            supabaseClient.from('user_quest_progress').select('id').eq('is_completed', true),
-            supabaseClient.from('user_quest_progress').select('rating').not('rating', 'is', null)
+            supabaseClient.from('user_quest_progress').select('id').eq('status', 'completed')
         ]);
         
         const totalQuests = questsRes.count || 0;
         const activeQuests = questsRes.data?.filter(q => q.is_active).length || 0;
         const totalCompletions = completionsRes.data?.length || 0;
-        const ratings = avgRatingRes.data || [];
-        const avgRating = ratings.length > 0 
-            ? (ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length).toFixed(1)
-            : 'N/A';
+        const avgRating = 'N/A'; // Rating field doesn't exist in current schema
         
         const questAnalyticsContainer = document.getElementById('questAnalytics');
         if (questAnalyticsContainer) {
@@ -101,7 +97,7 @@ async function loadEngagementAnalytics() {
         // Get quest completion data for the last 30 days
         const { data: recentActivity } = await supabaseClient
             .from('user_quest_progress')
-            .select('created_at, completed_at, is_completed')
+            .select('created_at, completed_at, status')
             .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
             .order('created_at');
         
@@ -144,14 +140,14 @@ async function loadPerformanceAnalytics() {
             .from('quests')
             .select(`
                 difficulty,
-                user_quest_progress(is_completed)
+                user_quest_progress(status)
             `);
         
         // Get average completion times
         const { data: completionTimes } = await supabaseClient
             .from('user_quest_progress')
-            .select('started_at, completed_at, quests(estimated_duration)')
-            .eq('is_completed', true)
+            .select('started_at, completed_at')
+            .eq('status', 'completed')
             .not('started_at', 'is', null)
             .not('completed_at', 'is', null);
         
@@ -188,27 +184,24 @@ async function loadPopularQuests() {
             .from('quests')
             .select(`
                 *,
-                user_quest_progress(id, is_completed, rating),
+                user_quest_progress(id, status),
                 cities(name)
             `)
             .limit(10);
         
         if (!popularQuests) return;
         
-        // Calculate popularity score based on completions and ratings
+        // Calculate popularity score based on completions
         const questsWithStats = popularQuests.map(quest => {
             const progress = quest.user_quest_progress || [];
-            const completions = progress.filter(p => p.is_completed).length;
-            const ratings = progress.filter(p => p.rating).map(p => p.rating);
-            const avgRating = ratings.length > 0 
-                ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length 
-                : 0;
+            const completions = progress.filter(p => p.status === 'completed').length;
+            const avgRating = 0; // Rating system not implemented
             
             return {
                 ...quest,
                 completions,
                 avgRating,
-                popularityScore: completions * 0.7 + avgRating * 0.3
+                popularityScore: completions
             };
         }).sort((a, b) => b.popularityScore - a.popularityScore);
         
@@ -268,7 +261,7 @@ function createActivityChart(data) {
             dailyStats[date] = { started: 0, completed: 0 };
         }
         dailyStats[date].started++;
-        if (item.is_completed && item.completed_at) {
+        if (item.status === 'completed' && item.completed_at) {
             const completedDate = new Date(item.completed_at).toISOString().split('T')[0];
             if (!dailyStats[completedDate]) {
                 dailyStats[completedDate] = { started: 0, completed: 0 };
@@ -362,7 +355,7 @@ function createDifficultyChart(data) {
         }
         difficultyStats[difficulty].total++;
         
-        const completions = quest.user_quest_progress?.filter(p => p.is_completed).length || 0;
+        const completions = quest.user_quest_progress?.filter(p => p.status === 'completed').length || 0;
         difficultyStats[difficulty].completed += completions;
     });
     
@@ -483,7 +476,7 @@ async function exportAnalyticsData() {
         showLoading(true);
         
         const [users, quests, progress, stops] = await Promise.all([
-            supabaseClient.from('users').select('*'),
+            supabaseClient.from('profiles').select('*'),
             supabaseClient.from('quests').select('*'),
             supabaseClient.from('user_quest_progress').select('*'),
             supabaseClient.from('quest_stops').select('*')
