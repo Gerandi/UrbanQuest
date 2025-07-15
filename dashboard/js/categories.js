@@ -202,6 +202,13 @@ function showCategoryModal(category = null) {
         </form>
     `;
 
+    // Ensure ModalManager is available
+    if (typeof ModalManager === 'undefined' || !ModalManager.create) {
+        console.error('ModalManager not available');
+        Utils.showToast('Error: Modal system not initialized', 'error');
+        return;
+    }
+    
     ModalManager.create('categoryModal', title, content, 'lg');
     ModalManager.show('categoryModal');
 
@@ -450,8 +457,13 @@ async function viewCategoryQuests(categoryId) {
             </div>
         `;
         
-        ModalManager.create('categoryQuestsModal', `Quests in ${categoryData.name}`, content, 'lg');
-        ModalManager.show('categoryQuestsModal');
+        if (typeof ModalManager !== 'undefined' && ModalManager.create) {
+            ModalManager.create('categoryQuestsModal', `Quests in ${categoryData.name}`, content, 'lg');
+            ModalManager.show('categoryQuestsModal');
+        } else {
+            console.error('ModalManager not available for category quests modal');
+            Utils.showToast('Error: Modal system not initialized', 'error');
+        }
         
     } catch (error) {
         Utils.handleError(error, 'Failed to load category quests');

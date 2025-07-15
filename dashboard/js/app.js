@@ -465,8 +465,45 @@ window.showCityModal = showCityModal;
 window.showCategoryModal = showCategoryModal;
 window.refreshAllData = refreshAllData;
 
+// Debug function to test ModalManager
+window.testModalManager = function() {
+    console.log('Testing ModalManager...');
+    
+    if (typeof window.ModalManager === 'undefined') {
+        console.error('ModalManager is undefined');
+        Utils.showToast('ModalManager is undefined', 'error');
+        return;
+    }
+    
+    if (!window.ModalManager.create) {
+        console.error('ModalManager.create is not a function');
+        Utils.showToast('ModalManager.create is not a function', 'error');
+        return;
+    }
+    
+    try {
+        ModalManager.create('testModal', 'Test Modal', '<p>ModalManager is working correctly!</p>', 'md');
+        ModalManager.show('testModal');
+        console.log('✅ ModalManager test passed');
+        Utils.showToast('ModalManager test passed!', 'success');
+    } catch (error) {
+        console.error('ModalManager test failed:', error);
+        Utils.showToast('ModalManager test failed: ' + error.message, 'error');
+    }
+};
+
 // Performance monitoring
 window.addEventListener('load', () => {
+    // Test ModalManager availability
+    setTimeout(() => {
+        if (typeof window.ModalManager !== 'undefined' && window.ModalManager.create) {
+            console.log('✅ ModalManager is available and working');
+        } else {
+            console.error('❌ ModalManager is NOT available');
+            Utils.showToast('Warning: Modal system may not work properly', 'warning');
+        }
+    }, 100);
+
     console.log('UrbanQuest Admin Dashboard loaded successfully');
 });
 

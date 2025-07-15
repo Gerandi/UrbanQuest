@@ -49,6 +49,13 @@ function showQuestStopModal(questStop = null) {
             </form>
         `;
 
+        // Ensure ModalManager is available
+        if (typeof ModalManager === 'undefined' || !ModalManager.create) {
+            console.error('ModalManager not available');
+            Utils.showToast('Error: Modal system not initialized', 'error');
+            return;
+        }
+        
         ModalManager.create('questStopModal', title, content, 'lg');
         ModalManager.show('questStopModal');
 

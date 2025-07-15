@@ -161,6 +161,13 @@ function showCityModal(city = null) {
         </form>
     `;
 
+    // Ensure ModalManager is available
+    if (typeof ModalManager === 'undefined' || !ModalManager.create) {
+        console.error('ModalManager not available');
+        Utils.showToast('Error: Modal system not initialized', 'error');
+        return;
+    }
+    
     ModalManager.create('cityModal', title, content, 'lg');
     ModalManager.show('cityModal');
 
@@ -393,8 +400,13 @@ async function viewCityQuests(cityId) {
             </div>
         `;
         
-        ModalManager.create('cityQuestsModal', `Quests in ${cityData.name}`, content, 'lg');
-        ModalManager.show('cityQuestsModal');
+        if (typeof ModalManager !== 'undefined' && ModalManager.create) {
+            ModalManager.create('cityQuestsModal', `Quests in ${cityData.name}`, content, 'lg');
+            ModalManager.show('cityQuestsModal');
+        } else {
+            console.error('ModalManager not available for city quests modal');
+            Utils.showToast('Error: Modal system not initialized', 'error');
+        }
         
     } catch (error) {
         Utils.handleError(error, 'Failed to load city quests');
@@ -427,8 +439,14 @@ async function viewCityMap(cityId) {
             </div>
         `;
         
-        ModalManager.create('cityMapModal', `Map: ${city.name}`, content, 'xl');
-        ModalManager.show('cityMapModal');
+        if (typeof ModalManager !== 'undefined' && ModalManager.create) {
+            ModalManager.create('cityMapModal', `Map: ${city.name}`, content, 'xl');
+            ModalManager.show('cityMapModal');
+        } else {
+            console.error('ModalManager not available for city map modal');
+            Utils.showToast('Error: Modal system not initialized', 'error');
+            return;
+        }
         
         // Initialize map after modal is shown
         setTimeout(() => {

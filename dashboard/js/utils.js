@@ -244,6 +244,64 @@ async function checkConnection() {
     }
 }
 
+// Fallback modal system
+function createFallbackModal(title, content) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    modal.innerHTML = `
+        <div style="
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        ">
+            <h3 style="margin-top: 0; margin-bottom: 15px; font-size: 18px; font-weight: bold;">${title}</h3>
+            <div>${content}</div>
+            <button onclick="this.closest('[style*=\"position: fixed\"]').remove()" 
+                    style="
+                        position: absolute;
+                        top: 10px;
+                        right: 15px;
+                        background: none;
+                        border: none;
+                        font-size: 20px;
+                        cursor: pointer;
+                    ">×</button>
+        </div>
+    `;
+    
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+    });
+    
+    document.body.appendChild(modal);
+    return modal;
+}
+
+// Check ModalManager availability
+function ensureModalManager() {
+    if (typeof window.ModalManager === 'undefined' || !window.ModalManager.create) {
+        console.warn('ModalManager not available, using fallback');
+        return false;
+    }
+    return true;
+}
+
 // Export utilities for use in other files
 window.Utils = {
     showToast,
@@ -272,5 +330,7 @@ window.Utils = {
     getChallengeIcon,
     getChallengeColor,
     getChallengeName,
-    checkConnection
+    checkConnection,
+    createFallbackModal,
+    ensureModalManager
 };

@@ -284,8 +284,13 @@ async function viewUserDetails(userId) {
             </div>
         `;
         
-        ModalManager.create('userDetailsModal', `User Details: ${user.full_name || user.email}`, content, 'xl');
-        ModalManager.show('userDetailsModal');
+        if (typeof ModalManager !== 'undefined' && ModalManager.create) {
+            ModalManager.create('userDetailsModal', `User Details: ${user.full_name || user.email}`, content, 'xl');
+            ModalManager.show('userDetailsModal');
+        } else {
+            console.error('ModalManager not available for user details modal');
+            Utils.showToast('Error: Modal system not initialized', 'error');
+        }
         
     } catch (error) {
         Utils.handleError(error, 'Failed to load user details');
@@ -350,8 +355,14 @@ async function editUser(userId) {
             </form>
         `;
 
-        ModalManager.create('editUserModal', `Edit User: ${user.full_name || user.email}`, content, 'md');
-        ModalManager.show('editUserModal');
+        if (typeof ModalManager !== 'undefined' && ModalManager.create) {
+            ModalManager.create('editUserModal', `Edit User: ${user.full_name || user.email}`, content, 'md');
+            ModalManager.show('editUserModal');
+        } else {
+            console.error('ModalManager not available for edit user modal');
+            Utils.showToast('Error: Modal system not initialized', 'error');
+            return;
+        }
 
         // Set up form handler
         const form = document.getElementById('userForm');

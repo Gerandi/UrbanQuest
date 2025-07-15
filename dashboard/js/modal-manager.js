@@ -193,8 +193,20 @@ class ModalManager {
     }
 }
 
-// Create global instance
-window.ModalManager = new ModalManager();
+// Initialize ModalManager when DOM is ready
+function initializeModalManager() {
+    if (typeof window.ModalManager === 'undefined') {
+        window.ModalManager = new ModalManager();
+        console.log('ModalManager initialized successfully');
+    }
+}
+
+// Initialize immediately if DOM is already loaded, otherwise wait for DOMContentLoaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeModalManager);
+} else {
+    initializeModalManager();
+}
 
 // Export for modules
 if (typeof module !== 'undefined' && module.exports) {

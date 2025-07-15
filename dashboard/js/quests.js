@@ -187,6 +187,13 @@ function showQuestModal(quest = null) {
             </form>
         `;
 
+        // Ensure ModalManager is available
+        if (typeof ModalManager === 'undefined' || !ModalManager.create) {
+            console.error('ModalManager not available');
+            Utils.showToast('Error: Modal system not initialized', 'error');
+            return;
+        }
+        
         ModalManager.create('questModal', title, content, 'lg');
         ModalManager.show('questModal');
 
@@ -416,8 +423,13 @@ async function previewQuest(questId) {
             </div>
         `;
         
-        ModalManager.create('questPreviewModal', `Quest Preview: ${quest.title}`, content, 'xl');
-        ModalManager.show('questPreviewModal');
+        if (typeof ModalManager !== 'undefined' && ModalManager.create) {
+            ModalManager.create('questPreviewModal', `Quest Preview: ${quest.title}`, content, 'xl');
+            ModalManager.show('questPreviewModal');
+        } else {
+            console.error('ModalManager not available for quest preview modal');
+            Utils.showToast('Error: Modal system not initialized', 'error');
+        }
         
     } catch (error) {
         Utils.handleError(error, 'Failed to load quest preview');
