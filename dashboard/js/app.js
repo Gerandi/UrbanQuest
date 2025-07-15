@@ -4,17 +4,13 @@
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('DOM loaded, initializing UrbanQuest Admin Dashboard...');
     
-    // Initialize Supabase
-    const SUPABASE_URL = 'https://oimkghtvjyxfyfyxqrdt.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pbWtnaHR2anl4ZnlmeXhxcmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU2MzQ4MDQsImV4cCI6MjA1MTIxMDgwNH0.wV6k5EqAmOGwX8yiJ8VH--wY26m-rwVgGT1b3z7pLTE';
-    
-    if (typeof supabase === 'undefined') {
-        console.error('Supabase library not loaded');
+    // Check if Supabase is initialized (should be done in config.js)
+    if (typeof window.supabase === 'undefined') {
+        console.error('❌ Supabase not initialized. Check config.js');
         return;
     }
     
-    window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('Supabase initialized');
+    console.log('✅ Using Supabase client initialized in config.js');
 
     // Set up navigation
     setupNavigation();

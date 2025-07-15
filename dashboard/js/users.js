@@ -3,8 +3,31 @@ const UserManager = {
     currentUsers: [],
     
     async init() {
+        await this.waitForSupabase();
         await this.loadUsers();
         this.setupEventListeners();
+    },
+
+    async waitForSupabase() {
+        return new Promise((resolve) => {
+            if (window.supabase) {
+                resolve();
+                return;
+            }
+            
+            const checkInterval = setInterval(() => {
+                if (window.supabase) {
+                    clearInterval(checkInterval);
+                    resolve();
+                }
+            }, 100);
+            
+            setTimeout(() => {
+                clearInterval(checkInterval);
+                console.error('❌ Supabase not available after 10 seconds in users.js');
+                resolve();
+            }, 10000);
+        });
     },
 
     setupEventListeners() {

@@ -310,9 +310,15 @@ function generateId(prefix = '') {
     return uniqueId.toLowerCase();
 }
 
+// Notification function (alias for showToast for backwards compatibility)
+function showNotification(message, type = 'info') {
+    return showToast(message, type);
+}
+
 // Export utilities for use in other files
 window.Utils = {
     showToast,
+    showNotification,
     removeToast,
     showLoading,
     showElementLoading,

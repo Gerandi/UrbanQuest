@@ -73,3 +73,40 @@ window.AppState = {
     currentQuestStop: null,
     isLoading: false
 };
+
+// Initialize Supabase early so modules can use it
+function initializeSupabase() {
+    if (typeof supabase !== 'undefined' && CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY) {
+        window.supabase = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+        window.supabaseClient = window.supabase;
+        globalThis.supabase = window.supabase;
+        console.log('✅ Supabase initialized early in config.js');
+        return true;
+    }
+    return false;
+}
+
+// Wait for Supabase library to load and then initialize
+function waitForSupabaseAndInit() {
+    if (initializeSupabase()) {
+        return;
+    }
+    
+    // If supabase isn't loaded yet, wait for it
+    const checkInterval = setInterval(() => {
+        if (initializeSupabase()) {
+            clearInterval(checkInterval);
+        }
+    }, 100);
+    
+    // Timeout after 10 seconds
+    setTimeout(() => {
+        clearInterval(checkInterval);
+        if (typeof window.supabase === 'undefined') {
+            console.error('❌ Failed to initialize Supabase after 10 seconds');
+        }
+    }, 10000);
+}
+
+// Start initialization
+waitForSupabaseAndInit();

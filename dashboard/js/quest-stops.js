@@ -5,9 +5,34 @@ const QuestStopManager = {
     selectedQuestId: null,
     
     async init() {
+        // Wait for Supabase to be available
+        await this.waitForSupabase();
         await this.loadQuests();
         await this.loadQuestStops();
         this.setupEventListeners();
+    },
+
+    async waitForSupabase() {
+        return new Promise((resolve) => {
+            if (window.supabase) {
+                resolve();
+                return;
+            }
+            
+            const checkInterval = setInterval(() => {
+                if (window.supabase) {
+                    clearInterval(checkInterval);
+                    resolve();
+                }
+            }, 100);
+            
+            // Timeout after 10 seconds
+            setTimeout(() => {
+                clearInterval(checkInterval);
+                console.error('❌ Supabase not available after 10 seconds in quest-stops.js');
+                resolve();
+            }, 10000);
+        });
     },
 
     setupEventListeners() {
