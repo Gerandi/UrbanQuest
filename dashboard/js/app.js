@@ -1,5 +1,8 @@
 // Main Application Logic
 
+// Global state
+let currentUser = null;
+
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('DOM loaded, initializing UrbanQuest Admin Dashboard...');
@@ -12,11 +15,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     console.log('✅ Using Supabase client initialized in config.js');
 
-    // Set up navigation
-    setupNavigation();
-    
-    // Load initial tab
-    showTab('quests');
+    // Check authentication first
+    await initializeAuth();
     
     // Test modal system
     if (typeof showModal !== 'undefined') {
@@ -27,6 +27,139 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     console.log('UrbanQuest Admin Dashboard loaded successfully');
 });
+
+// Authentication functions
+async function initializeAuth() {
+    // Check if user is already logged in
+    const { data: { session } } = await window.supabase.auth.getSession();
+    if (session) {
+        await handleAuthSuccess(session.user);
+    } else {
+        // Show login form
+        showLoginForm();
+    }
+
+    // Set up auth listener
+    window.supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+            await handleAuthSuccess(session.user);
+        } else if (event === 'SIGNED_OUT') {
+            handleAuthSignOut();
+        }
+    });
+
+    // Set up login form listener
+    const loginForm = document.getElementById('loginFormElement');
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
+
+    // Set up logout button listener
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
+}
+
+async function handleLogin(e) {
+    e.preventDefault();
+    showLoading(true);
+    
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    
+    try {
+        const { data, error } = await window.supabase.auth.signInWithPassword({
+            email,
+            password
+        });
+        
+        if (error) throw error;
+        
+        // Check if user has admin privileges
+        const { data: profile, error: profileError } = await window.supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.user.id)
+            .single();
+            
+        if (profileError || !['admin', 'super_admin', 'content_creator'].includes(profile?.role)) {
+            await window.supabase.auth.signOut();
+            throw new Error('Admin access required');
+        }
+        
+    } catch (error) {
+        const loginError = document.getElementById('loginError');
+        const loginErrorText = document.getElementById('loginErrorText');
+        if (loginErrorText) {
+            loginErrorText.textContent = error.message;
+        } else {
+            loginError.textContent = error.message;
+        }
+        loginError.classList.remove('hidden');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function handleAuthSuccess(user) {
+    currentUser = user;
+    const userEmail = document.getElementById('userEmail');
+    if (userEmail) {
+        userEmail.textContent = user.email;
+    }
+    
+    // Hide login form and show dashboard
+    const loginForm = document.getElementById('loginForm');
+    const dashboard = document.getElementById('dashboard');
+    const loginError = document.getElementById('loginError');
+    
+    if (loginForm) loginForm.classList.add('hidden');
+    if (dashboard) dashboard.classList.remove('hidden');
+    if (loginError) loginError.classList.add('hidden');
+    
+    // Set up navigation and load initial data
+    setupNavigation();
+    showTab('quests');
+    
+    console.log('✅ User authenticated successfully');
+}
+
+function handleAuthSignOut() {
+    currentUser = null;
+    showLoginForm();
+    
+    // Clear form fields
+    const emailField = document.getElementById('email');
+    const passwordField = document.getElementById('password');
+    if (emailField) emailField.value = '';
+    if (passwordField) passwordField.value = '';
+}
+
+function showLoginForm() {
+    const loginForm = document.getElementById('loginForm');
+    const dashboard = document.getElementById('dashboard');
+    
+    if (loginForm) loginForm.classList.remove('hidden');
+    if (dashboard) dashboard.classList.add('hidden');
+}
+
+async function handleLogout() {
+    showLoading(true);
+    await window.supabase.auth.signOut();
+    showLoading(false);
+}
+
+function showLoading(show) {
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+        if (show) {
+            loadingOverlay.classList.remove('hidden');
+        } else {
+            loadingOverlay.classList.add('hidden');
+        }
+    }
+}
 
 // Navigation setup
 function setupNavigation() {
