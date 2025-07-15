@@ -291,7 +291,7 @@ async function loadRecentActivity() {
                         <span class="text-sm text-gray-500">
                             ${Utils.formatDate(progress.updated_at)}
                         </span>
-                        ${progress.is_completed ? 
+                        ${progress.status === 'completed' ? 
                             `<div class="text-xs text-green-600 font-medium">${progress.total_points || 0} points</div>` : 
                             `<div class="text-xs text-blue-600 font-medium">In progress</div>`
                         }

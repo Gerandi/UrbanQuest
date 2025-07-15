@@ -296,12 +296,11 @@ async function duplicateQuestStop(stopId) {
         if (error) throw error;
         
         // Create a copy with modified title and incremented order
+        const { id, created_at, updated_at, ...stopDataWithoutId } = questStop;
         const duplicatedStop = {
-            ...questStop,
-            id: undefined, // Remove ID so a new one is generated
+            ...stopDataWithoutId,
             title: `${questStop.title} (Copy)`,
-            order_index: questStop.order_index + 1,
-            created_at: new Date().toISOString()
+            order_index: questStop.order_index + 1
         };
         
         const { error: insertError } = await supabaseClient

@@ -289,12 +289,11 @@ async function duplicateQuest(questId) {
         if (error) throw error;
         
         // Create a copy with modified title
+        const { id, created_at, updated_at, ...questDataWithoutId } = quest;
         const duplicatedQuest = {
-            ...quest,
-            id: undefined, // Remove ID so a new one is generated
+            ...questDataWithoutId,
             title: `${quest.title} (Copy)`,
-            is_active: false, // Set as inactive by default
-            created_at: new Date().toISOString()
+            is_active: false // Set as inactive by default
         };
         
         const { error: insertError } = await supabaseClient
@@ -463,7 +462,27 @@ async function exportQuest(questId) {
     }
 }
 
-// Helper function for loading categories
+// Helper functions for loading dropdown data
+async function loadCitiesForDropdown() {
+    try {
+        const { data: cities, error } = await supabaseClient
+            .from('cities')
+            .select('id, name')
+            .eq('is_active', true)
+            .order('name');
+            
+        if (error) throw error;
+        
+        return cities.map(city => ({
+            value: city.id,
+            label: city.name
+        }));
+    } catch (error) {
+        console.error('Error loading cities:', error);
+        return [];
+    }
+}
+
 async function loadCategoriesForDropdown() {
     try {
         const { data: categories, error } = await supabaseClient
